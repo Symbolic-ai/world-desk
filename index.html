@@ -162,7 +162,16 @@ kbd{display:inline-flex;align-items:center;justify-content:center;height:20px;mi
 .opt.rec{background:rgba(164,138,251,.1);box-shadow:inset 0 0 0 1px rgba(164,138,251,.55)}
 .opt .tag{display:flex;margin-top:6px}
 .autobar{height:3px;background:var(--muted);border-radius:3px;overflow:hidden;margin-top:10px}
-.autobar i{display:block;height:100%;width:0;background:var(--ai-action)}
+.autobar i{display:block;height:100%;width:100%;background:var(--ai-action);transition:background .3s}
+.autobar i.late{background:var(--error-400)}
+.srcs{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:8px}
+.srcs .sh{display:flex;align-items:center;gap:8px;font-size:12px}
+.srcs .sh b{font-weight:600}
+.srcs .sh span:not(.badge){color:var(--muted-foreground)}
+.srcs p{font-size:15px !important;margin:2px 0 0 !important}
+.opt.out{opacity:.5;cursor:not-allowed}
+.opt.out .ot{text-decoration:line-through;text-decoration-color:rgba(245,244,240,.45)}
+.card{max-height:calc(100vh - 80px);overflow:auto}
 .card .empty{color:var(--muted-foreground);margin:0;font-size:14px}
 
 .coach{position:absolute;left:50%;top:22px;transform:translate(-50%,-6px);width:min(560px,calc(100vw - 640px));text-align:center;pointer-events:none;opacity:0;transition:opacity .35s, transform .35s}
@@ -313,7 +322,7 @@ kbd{display:inline-flex;align-items:center;justify-content:center;height:20px;mi
     <p class="subtitle">World Desk</p>
     <p class="lede">It is 20:00 and you have the night desk. Stories will break around the world until dawn. Send Symbolic's agents to cover them, make the editorial calls, and put the best of the night in the morning edition.</p>
     <div class="row"><button class="btn lg" id="startBtn" disabled>Start the night shift</button><span class="loadnote" id="loadNote"><svg class="logomark animated" viewBox="0 0 200 200" width="20" height="20" aria-hidden="true"><path class="q q1" d="M9.35e-05 50C9.35e-05 22.39 22.39 0 50 0H100V100H50C22.39 100 9.35e-05 77.61 9.35e-05 50Z" fill="#F52B2B"/><path class="q q4" d="M200 150C200 122.39 177.61 100 150 100L100 100L100 200H150C177.61 200 200 177.61 200 150Z" fill="#02523B"/><path class="q q3" d="M100 150C100 122.39 77.61 100 50 100C22.39 100 0 122.39 0 150C0 177.61 22.39 200 50 200C77.61 200 100 177.61 100 150Z" fill="#FF6D1B"/><path class="q q2" d="M200 50C200 22.39 177.61 0 150 0C122.39 0 100 22.39 100 50C100 77.61 122.39 100 150 100C177.61 100 200 77.61 200 50Z" fill="#0060F1"/></svg><span>Loading the planet</span></span></div>
-    <p class="controls">Drag to turn the globe. Select a story, then assign an agent. Keys: <kbd>1</kbd> to <kbd>9</kbd> pick a story, <kbd>Enter</kbd> assigns, <kbd>A</kbd> or <kbd>B</kbd> makes a call, <kbd>P</kbd> pauses, <kbd>M</kbd> mutes.</p>
+    <p class="controls">Drag to turn the globe. Select a story, then assign an agent. Keys: <kbd>1</kbd> to <kbd>9</kbd> pick a story, <kbd>Enter</kbd> assigns, <kbd>A</kbd> to <kbd>D</kbd> makes a call, <kbd>P</kbd> pauses, <kbd>M</kbd> mutes.</p>
   </div>
 </section>
 <section class="screen" id="pause">
@@ -412,6 +421,73 @@ const STORIES = [
   ['Manila', 14.60, 120.98, 'Climate', 'Typhoon', 'Typhoon makes landfall in Luzon', 300, 'Winds reached 185 km/h.', 'Winds reached 285 km/h.', 'Weather service: sustained winds of 185 km/h at landfall.'],
 ].map(([city, lat, lon, beat, tag, head, reachK, ok, no, ev]) => ({ city, lat, lon, beat, tag, head, reach: reachK * 1000, ok, no, ev }));
 
+// Fact-check calls. Each story has three sources: the latest authoritative one, an older or preliminary one,
+// and an unverified one. Option 0 is the version the authoritative source supports; the others are traps.
+const CALLS = {
+  'Rotterdam': { src: [['Port authority', '23:40', 'Three of the eight container terminals are closed. Together they handle about 40 percent of container volume.', 'primary'], ['Dockworkers union', '21:05', 'All terminals will stop work tonight.', 'stale'], ['Post on X', '22:30', 'Port of Rotterdam completely shut down.', 'rumor']],
+    opts: ['The strike closed three terminals that handle about 40 percent of container volume.', 'The strike closed every container terminal at the port.', 'The strike closed 40 percent of the port\'s container terminals.', 'The strike closed five of the eight container terminals.'] },
+  'Sendai': { src: [['Meteorological agency', '03:12', 'Magnitude revised to 7.1 from the preliminary 7.4.', 'primary'], ['Meteorological agency', '02:51', 'Preliminary magnitude 7.4.', 'stale'], ['Viral video caption', '02:58', 'Magnitude 8.0 quake hits Japan.', 'rumor']],
+    opts: ['The quake had a magnitude of 7.1, revised down from 7.4.', 'The quake had a magnitude of 7.4.', 'The quake had a magnitude of 7.4, revised up from 7.1.', 'The quake had a magnitude of 8.0.'] },
+  'São Paulo': { src: [['Central bank statement', '18:30', 'The committee lowered the Selic rate by 50 basis points, to 10.25 percent.', 'primary'], ['Economist poll', '16:00', 'Economists expect a cut of 0.75 points.', 'stale'], ['Finance blog', '18:34', 'Rate cut to 10.75 percent.', 'rumor']],
+    opts: ['The bank cut its benchmark rate by half a point, to 10.25 percent.', 'The bank cut its benchmark rate by 50 percent, to 10.25 percent.', 'The bank cut its benchmark rate by 0.75 points, to 10.25 percent.', 'The bank cut its benchmark rate by half a point, to 10.75 percent.'] },
+  'Lagos': { src: [['Developer filing', 'Today', '3,000 workstations on six floors. A second phase adds 2,000 by 2028.', 'primary'], ['Launch press release', 'March', 'Space for 5,000 innovators.', 'stale'], ['Post on LinkedIn', 'Today', 'Africa\'s biggest campus: 30,000 desks!', 'rumor']],
+    opts: ['The campus opens with 3,000 desks, and a second phase adds 2,000 by 2028.', 'The campus opens with 5,000 desks.', 'The campus opens with 30,000 desks.', 'The campus opens with 3,000 desks on each of its six floors.'] },
+  'Mumbai': { src: [['Rail operator notice', '22:10', 'Partial Western line service resumes Thursday at 05:00. The Harbour line stays suspended until further notice.', 'primary'], ['Rail operator notice', '19:30', 'All suburban services are suspended.', 'stale'], ['Local WhatsApp group', '21:00', 'Trains are off for a month.', 'rumor']],
+    opts: ['Partial service returns on the Western line on Thursday. The Harbour line stays closed.', 'All suburban lines resume on Thursday.', 'Suburban trains stay suspended for a month.', 'The Harbour line resumes on Thursday. The Western line stays closed.'] },
+  'Reykjavík': { src: [['Airport operator', '01:20', 'Keflavík is open. The ash plume is moving northeast, away from the flight paths.', 'primary'], ['Met office', '23:50', 'Ash could reach the flight paths if the wind turns.', 'stale'], ['Travel forum', '00:40', 'All flights in Iceland are grounded.', 'rumor']],
+    opts: ['Keflavík airport is open, and the ash is moving away from the flight paths.', 'All flights in Iceland are grounded.', 'Keflavík airport is open, but the ash is moving toward the flight paths.', 'Keflavík airport is closed until the wind turns.'] },
+  'Nairobi': { src: [['Energy ministry release', '14:00', 'The agreement is worth $12 billion over ten years, for 3 gigawatts of capacity.', 'primary'], ['News agency', '11:20', 'Kenya nears a $1.2 billion solar deal.', 'stale'], ['Post on X', '14:05', 'Biggest solar deal in history: 30 GW!', 'rumor']],
+    opts: ['The deal is worth $12 billion over ten years, for 3 gigawatts of solar.', 'The deal is worth $1.2 billion over ten years.', 'The deal is worth $12 billion a year for ten years.', 'The deal is worth $12 billion over ten years, for 30 gigawatts of solar.'] },
+  'Chicago': { src: [['City clerk record', '19:45', 'Budget passed 31 to 19. An amendment removed the fare increase, 26 to 24.', 'primary'], ['Mayor\'s office', 'Monday', 'The budget includes a 25-cent fare increase.', 'stale'], ['Neighborhood blog', '19:50', 'Budget sails through unanimously.', 'rumor']],
+    opts: ['The council passed the budget 31 to 19, after it removed a fare increase.', 'The council passed the budget 31 to 19, with a 25-cent fare increase.', 'The council passed the budget unanimously.', 'The council passed the budget 26 to 24, after it removed a fare increase.'] },
+  'Sydney': { src: [['Bureau of Meteorology', '16:10', 'Penrith reached 46.1 °C, above its 1939 record of 45.8 °C. Observatory Hill reached 41.2 °C.', 'primary'], ['Bureau forecast', '06:00', 'Western Sydney could reach 47 °C.', 'stale'], ['TikTok', '15:30', 'Sydney hits 48 degrees!', 'rumor']],
+    opts: ['Penrith reached 46.1 °C, which beat its record from 1939.', 'Sydney\'s city centre reached 46.1 °C.', 'Penrith reached 47 °C, which beat its record from 1939.', 'The whole city passed 48 °C.'] },
+  'Berlin': { src: [['Coalition paper, page 4', '13:00', 'The statutory retirement age remains 67. Work past 67 gets tax relief.', 'primary'], ['Leaked draft', 'Last week', 'The retirement age rises to 69 by 2040.', 'stale'], ['Tabloid headline', '09:00', 'Retirement at 70 is coming!', 'rumor']],
+    opts: ['The retirement age stays at 67, with tax relief for people who work longer.', 'The retirement age rises to 69 by 2040.', 'The retirement age stays at 67, with a pension bonus for people who retire early.', 'The retirement age rises to 70.'] },
+  'Seoul': { src: [['Earnings release', '08:00', 'Operating profit of 15.1 trillion won, up 212 percent on the year and 18 percent on the quarter.', 'primary'], ['Analyst preview', 'Friday', 'Profit is expected to rise 21 percent.', 'stale'], ['Investor forum', '08:10', 'Profits doubled, huge beat.', 'rumor']],
+    opts: ['Operating profit more than tripled from a year earlier.', 'Operating profit rose 212 percent from the previous quarter.', 'Operating profit rose 21 percent from a year earlier.', 'Operating profit doubled from a year earlier.'] },
+  'Mexico City': { src: [['Water commission notice', 'Friday', 'From Monday, supply falls 25 percent in all 16 boroughs. It is not a full shutoff.', 'primary'], ['Water commission notice', 'Tuesday', 'Rationing will cover nine boroughs next week.', 'stale'], ['Facebook post', 'Friday', 'Water shut off across the capital!', 'rumor']],
+    opts: ['From Monday, supply falls 25 percent in all 16 boroughs.', 'From Monday, water is shut off in all 16 boroughs.', 'From Monday, supply falls 25 percent in nine boroughs.', 'From Monday, supply falls 75 percent in all 16 boroughs.'] },
+  'Cairo': { src: [['Ministry catalog', 'Today', 'About 50,000 artifacts are on display, from a collection of more than 100,000.', 'primary'], ['Tourism brochure', '2023', 'Home to 100,000 artifacts.', 'stale'], ['Post on Instagram', 'Today', '5 million objects under one roof.', 'rumor']],
+    opts: ['The museum displays about 50,000 of its more than 100,000 artifacts.', 'The museum displays 100,000 artifacts.', 'The museum holds 5 million objects.', 'The museum displays about 5,000 of its 50,000 artifacts.'] },
+  'Vancouver': { src: [['Wildfire service', '23:30', '24,100 residents are under an evacuation order. 6,800 more are on alert.', 'primary'], ['Wildfire service', '20:15', '2,400 residents are ordered to leave.', 'stale'], ['Post on X', '22:50', 'The whole North Shore is being evacuated.', 'rumor']],
+    opts: ['About 24,000 residents must leave, and 6,800 more are on alert.', 'About 2,400 residents must leave.', 'About 31,000 residents must leave.', 'Everyone on the North Shore must leave.'] },
+  'Singapore': { src: [['Transport ministry', 'Today', 'Terminal 5 opens in the mid-2030s. Its first phase handles 50 million passengers a year.', 'primary'], ['Airline interview', '2019', 'We expect Terminal 5 in 2030.', 'stale'], ['Travel blog', 'Today', 'T5 opens next year!', 'rumor']],
+    opts: ['Terminal 5 opens in the mid-2030s, first for 50 million passengers a year.', 'Terminal 5 opens in 2030.', 'Terminal 5 opens next year.', 'Terminal 5 opens in the mid-2030s, for 50 million passengers a month.'] },
+  'Buenos Aires': { src: [['Statistics office', '16:00', 'Consumer prices rose 2.2 percent in the month and 31 percent from a year earlier.', 'primary'], ['Private consultancy', 'Last week', 'Monthly inflation is near 2.5 percent.', 'stale'], ['Post on X', '16:05', 'Inflation is just 2.2% now!', 'rumor']],
+    opts: ['Prices rose 2.2 percent in the month, and 31 percent over the year.', 'Prices rose 2.2 percent over the year.', 'Prices rose 2.5 percent in the month, and 31 percent over the year.', 'Prices rose 31 percent in the month.'] },
+  'Paris': { src: [['Culture ministry', '11:00', 'Construction starts in 2027. The east entrance opens in 2031.', 'primary'], ['Design competition notice', '2024', 'Opening planned for 2029.', 'stale'], ['Tourism account', '11:30', 'New Louvre entrance opens this summer!', 'rumor']],
+    opts: ['Work starts in 2027, and the new entrance opens in 2031.', 'The new entrance opens in 2029.', 'Work starts in 2031, and the new entrance opens in 2027.', 'The new entrance opens this summer.'] },
+  'Johannesburg': { src: [['Power utility', '10:00', '300 days since the last scheduled power cut. Unplanned local outages continue.', 'primary'], ['Minister\'s speech', 'June', '200 days without load-shedding.', 'stale'], ['Post on X', '10:20', 'No power cuts all year!', 'rumor']],
+    opts: ['South Africa has gone 300 days without scheduled power cuts. Local outages continue.', 'South Africa has gone 300 days without any power outage.', 'South Africa has gone 200 days without scheduled power cuts.', 'South Africa has had no power cuts all year.'] },
+  'Anchorage': { src: [['Ice data center', 'Today', 'The lowest September extent in the satellite record, which began in 1979.', 'primary'], ['Ice data center', 'Last year', 'The second-lowest extent on record.', 'stale'], ['Climate podcast', 'Today', 'Lowest in 10,000 years.', 'rumor']],
+    opts: ['Arctic sea ice is at its lowest since satellite records began in 1979.', 'Arctic sea ice is at its lowest in 10,000 years.', 'Arctic sea ice is at its second-lowest level since 1979.', 'Arctic sea ice is at its lowest since records began in 1879.'] },
+  'Istanbul': { src: [['Metro operator', '09:00', 'Trains take 4 minutes between the two shore stations. The whole line is 13 km long.', 'primary'], ['Contractor', '2019', 'The crossing will take under 2 minutes.', 'stale'], ['Post on X', '09:10', 'Asia to Europe in 40 seconds!', 'rumor']],
+    opts: ['Trains take 4 minutes between the shore stations, on a 13-km line.', 'Trains take 40 seconds between the shore stations.', 'Trains take 2 minutes between the shore stations.', 'Trains cross 13 km under the Bosphorus in 4 minutes.'] },
+  'Tokyo': { src: [['Central bank data', '17:00', 'The yen reached its weakest level since April 1990.', 'primary'], ['Market report', 'Yesterday', 'The yen is at a 34-year low.', 'stale'], ['Trading chat', '17:02', 'Weakest yen ever!', 'rumor']],
+    opts: ['The yen fell to its weakest level since April 1990.', 'The yen fell to its weakest level on record.', 'The yen fell to a 34-year low.', 'The yen rose to its strongest level since April 1990.'] },
+  'Honolulu': { src: [['Warning center, bulletin 4', '04:10', 'Warning cancelled at 04:10. Waves of 0.4 m reached Hilo.', 'primary'], ['Warning center, bulletin 2', '02:30', 'Warning in effect. Waves of up to 1 m are possible.', 'stale'], ['Post on Facebook', '03:00', 'There was never a warning.', 'rumor']],
+    opts: ['The warning was lifted at 04:10, after waves of 0.4 m reached Hilo.', 'The warning stays in effect, with waves of up to 1 m possible.', 'The warning was lifted at 04:10, after waves of 4 m reached Hilo.', 'No tsunami warning was issued.'] },
+  'Madrid': { src: [['City planning file', 'Today', 'A budget of 300 million euros. The club pays for the works.', 'primary'], ['Early estimate', '2021', 'About 150 million euros.', 'stale'], ['Opposition councillor', 'Today', 'This will cost taxpayers 3 billion.', 'rumor']],
+    opts: ['The roof costs €300 million, and the club pays for it.', 'The roof costs €300 million, and the city pays for it.', 'The roof costs €150 million.', 'The roof costs €3 billion.'] },
+  'Jakarta': { src: [['Cabinet secretary', '10:00', 'Four ministries move in the first phase this year. The rest follow by 2029.', 'primary'], ['Government plan', '2022', 'All ministries move in 2024.', 'stale'], ['Post on X', '10:15', 'The whole government moves this week.', 'rumor']],
+    opts: ['Four ministries move this year, and the rest follow by 2029.', 'Every ministry moves this year.', 'Four ministries move by 2029, and the rest follow later.', 'The whole government moves this week.'] },
+  'Lima': { src: [['Journal paper', 'Today', 'An estimated mass of 85 to 180 tonnes.', 'primary'], ['University press release', 'Today', 'Possibly the heaviest animal that ever lived.', 'stale'], ['Science account', 'Today', 'A 1,800-tonne monster!', 'rumor']],
+    opts: ['The whale weighed an estimated 85 to 180 tonnes.', 'The whale was the heaviest animal that ever lived.', 'The whale weighed an estimated 180 to 850 tonnes.', 'The whale weighed an estimated 1,800 tonnes.'] },
+  'Dubai': { src: [['Transport authority', 'Today', 'The flight from the airport to the Palm takes 10 minutes. By car, the trip takes 45.', 'primary'], ['Operator advert', 'Today', 'Fly across the city in minutes.', 'stale'], ['Post on X', 'Today', 'Airport to Palm in 1 minute!', 'rumor']],
+    opts: ['The air taxi takes 10 minutes from the airport to the Palm. A car takes 45.', 'The air taxi takes 1 minute from the airport to the Palm.', 'The air taxi takes 45 minutes from the airport to the Palm.', 'The air taxi saves 10 minutes on the trip from the airport.'] },
+  'Toronto': { src: [['Council motion', '18:00', '65,000 homes by 2031. 20 percent of them are affordable.', 'primary'], ['Housing minister', '2023', 'The province targets 285,000 homes by 2031.', 'stale'], ['Post on Reddit', '18:10', 'Only 6,500 homes, what a joke.', 'rumor']],
+    opts: ['The plan covers 65,000 homes by 2031, and a fifth of them are affordable.', 'The plan covers 285,000 homes by 2031.', 'The plan covers 65,000 affordable homes by 2031.', 'The plan covers 6,500 homes by 2031.'] },
+  'Oslo': { src: [['Road federation', '09:00', '91 percent of new cars sold in August were fully electric.', 'primary'], ['Road federation', 'July', '89 percent of new cars were fully electric.', 'stale'], ['Post on X', '09:05', 'Norway now sells only electric cars.', 'rumor']],
+    opts: ['Fully electric cars made up 91 percent of new car sales in August.', 'Fully electric cars made up 91 percent of all the cars in Norway.', 'Fully electric cars made up 89 percent of new car sales in August.', 'Norway sold only electric cars in August.'] },
+  'Cape Town': { src: [['Observatory release', 'Today', 'The first image used 64 of the 197 planned dishes.', 'primary'], ['Construction update', 'March', '133 dishes are installed.', 'stale'], ['Space news account', 'Today', 'All 197 dishes online!', 'rumor']],
+    opts: ['The first image used 64 of the 197 planned dishes.', 'The first image used all 197 dishes.', 'The first image used 133 of the 197 planned dishes.', 'The first image used 64 dishes, a third of the 133 planned.'] },
+  'Manila': { src: [['Weather service', '22:00', 'Sustained winds of 185 km/h at landfall, with gusts of 230 km/h.', 'primary'], ['Storm forecast', '10:00', 'It could strengthen to 250 km/h.', 'stale'], ['Post on Facebook', '21:30', '285 km/h winds!', 'rumor']],
+    opts: ['The typhoon hit with sustained winds of 185 km/h and gusts of 230 km/h.', 'The typhoon hit with sustained winds of 230 km/h.', 'The typhoon hit with sustained winds of 250 km/h.', 'The typhoon hit with sustained winds of 285 km/h.'] },
+};
+const REL_LABEL = { primary: ['Latest, authoritative', 'success'], stale: ['Out of date', 'warning'], rumor: ['Unverified', 'error'] };
+const CALL_TIME = 20; // game seconds before the rival runs the story while you decide
+
 const FLAVOR = [
   ['Transcribing three interviews', 'Reading a 214-page filing', 'Searching your archive for past coverage', 'Merging six wire updates', 'Transcribing a 40-minute briefing', 'Analyzing the source documents'],
   ['Drafting in your house style', 'Applying your style guide', 'Writing to your standard format', 'Drafting in your publication voice'],
@@ -425,7 +501,7 @@ const CAPS = [
   { id:'transcribe', name:'Transcription', eff:'Research runs 1.8 times faster.', copy:'Symbolic transcribes interviews, meetings and video in minutes.' },
   { id:'documents', name:'Document analysis', eff:'Research runs 1.5 times faster.', copy:'It reads 200-page filings and pulls out what matters.' },
   { id:'style', name:'House style', eff:'Writing runs twice as fast.', copy:'Drafts follow your voices, formats and style rules.' },
-  { id:'factcheck', name:'Fact check', eff:'Symbolic recommends each call and makes it for you after 3 seconds.', copy:'It checks every claim against your sources.' },
+  { id:'factcheck', name:'Fact check', eff:'Symbolic rates every source and rules out two wrong versions of each claim.', copy:'It checks every claim against your sources.' },
   { id:'routing', name:'AI routing', eff:'Every stage runs 1.3 times faster.', copy:'Each task goes to the model that does it best.' },
   { id:'memory', name:'Institutional memory', eff:'A story near one you covered starts with half its research done.', copy:'Your archive, templates and prompts, ready for reuse.' },
   { id:'packages', name:'Publishing packages', eff:'Stories reach 1.5 times more readers and publish twice as fast.', copy:'Headlines, social posts and images, ready with the story.' },
@@ -1159,10 +1235,12 @@ function spawnStory() {
   for (let k = 0; k < deck.length && active.has(d.city); k++) { deck.unshift(d); d = deck.pop(); }
   const breaking = gt > 45 && Math.random() < 0.16;
   const n = ll2v(d.lat, d.lon, 1).normalize();
-  const order = Math.random() < 0.5 ? [0, 1] : [1, 0];
+  const call = CALLS[d.city];
+  const order = shuffle([0, 1, 2, 3]);
+  const srcOrder = shuffle([0, 1, 2]);
   const s = {
     id: ++sid, d, n, state: 'new', stage: 0, prog: [0, 0, 0, 0], spawnT: gt, deadline: gt + (breaking ? rand(30, 36) : rand(46, 64)), breaking,
-    reach: d.reach * (breaking ? 2.2 : 1), agent: null, rival: false, workT: 0, order, correctIdx: order.indexOf(0), callT: 0, flavor: '', doneT: 0, correction: false,
+    reach: d.reach * (breaking ? 2.2 : 1), agent: null, rival: false, workT: 0, order, srcOrder, call, correctIdx: order.indexOf(0), ruledOut: [], callT: 0, callExpired: false, flavor: '', doneT: 0, correction: false,
   };
   const g = new THREE.Group(); g.position.copy(n).multiplyScalar(R); g.quaternion.setFromUnitVectors(UP, n);
   const spikeMat = pillarMat(hdr(breaking ? C.gold : C.cream, 2.2));
@@ -1225,7 +1303,7 @@ function arrive(s) {
   renderCard(true); buildQueue();
 }
 function decide(s, idx, auto = false) {
-  if (!s || s.state !== 'call') return;
+  if (!s || s.state !== 'call' || s.ruledOut.includes(idx)) return;
   const right = idx === s.correctIdx;
   s.state = 'work'; s.stage = 3; s.flavor = pick(FLAVOR[3]); s.choice = idx;
   if (right) {
@@ -1234,7 +1312,7 @@ function decide(s, idx, auto = false) {
   } else {
     s.correction = true; game.corrections++; game.trust--; audio.bad(); audio.voice('v_correction', true);
     fxRed = 1; floaterAt(s.top, 'Correction', 'bad');
-    ticker(`Correction: "${s.order[idx] === 0 ? s.d.ok : s.d.no}" was wrong. ${s.d.ev}`);
+    ticker(`Correction: "${s.call.opts[s.order[idx]]}" was wrong. ${s.call.src[0][0]}: ${s.call.src[0][2]}`);
     renderTrust();
     if (game.trust <= 0) { endShift('trust'); return; }
   }
@@ -1278,8 +1356,8 @@ function updateStories(dt) {
       s.workT += dt;
       if (s.prog[s.stage] < 1) s.prog[s.stage] = Math.min(1, s.prog[s.stage] + dt / BASE[s.stage] * stageRate(s.stage));
       if (s.prog[s.stage] >= 1) {
-        if (s.stage === 2) { s.state = 'call'; s.callT = gt; audio.call(); audio.voice('v_call'); wave(s.n, col(C.orange), 1.6);
-          if (!game.tips.has('call')) { game.tips.add('call'); coach('Your call. Read what Symbolic found, then choose the version the sources support.', 9); select(s, true); }
+        if (s.stage === 2) { s.state = 'call'; s.callT = gt; s.ruledOut = game.caps.has('factcheck') ? shuffle([1, 2, 3].map(o => s.order.indexOf(o))).slice(0, 2) : []; audio.call(); audio.voice('v_call'); wave(s.n, col(C.orange), 1.6);
+          if (!game.tips.has('call')) { game.tips.add('call'); coach('Your call. The sources disagree. Trust the latest authoritative one, and watch for the traps in the wording.', 10); select(s, true); }
           else if (!selected || selected.state !== 'call') select(s, false);
         } else if (s.stage === 3) { publish(s); continue; }
         else { s.stage++; s.flavor = pick(FLAVOR[s.stage]); audio.stage(); wave(s.n, col(C.blueHi), 1.2); }
@@ -1287,7 +1365,11 @@ function updateStories(dt) {
       }
     } else if (s.state === 'call') {
       s.workT += dt;
-      if (game.caps.has('factcheck') && gt - s.callT >= 3) decide(s, s.correctIdx, true);
+      if (!s.callExpired && gt - s.callT >= CALL_TIME) {
+        s.callExpired = true;
+        if (!s.rival) { s.rival = true; s.deadline = Math.min(s.deadline, gt); s.label.classList.add('late'); audio.sting('sting_rival', 0.55); audio.voice('v_rival'); }
+        ticker(`The Daily Rumor ran the ${s.d.city} story while the desk decided.`); renderCard(true);
+      }
     } else if (s.state === 'done' && gt - s.doneT > 6) { removeStory(s); buildQueue(); if (!selected) renderCard(true); }
   }
 }
@@ -1327,11 +1409,12 @@ function renderCard(force = false) {
     const free = freeAgent();
     body = `<p class="status" data-status></p><div class="actions"><button class="btn" data-act="assign" ${free ? '' : 'disabled'}>${free ? 'Assign an agent' : 'No agent free'}</button><kbd>Enter</kbd></div>`;
   } else if (s.state === 'call') {
-    const opts = s.order.map(o => o === 0 ? d.ok : d.no);
-    const rec = game.caps.has('factcheck');
-    body = `<div class="evidence"><small>${LOGO_SM}Symbolic found</small><p>${esc(d.ev)}</p></div>
-      <div class="opts">${opts.map((t, i) => `<button class="opt ${rec && i === s.correctIdx ? 'rec' : ''}" data-opt="${i}"><kbd>${'AB'[i]}</kbd><span>${esc(t)}${rec && i === s.correctIdx ? '<span class="tag"><span class="badge primary">Symbolic recommends this version</span></span>' : ''}</span></button>`).join('')}</div>
-      ${rec ? '<div class="autobar"><i data-auto></i></div>' : ''}`;
+    const rated = game.caps.has('factcheck');
+    const srcs = s.srcOrder.map(i => s.call.src[i]);
+    body = `<div class="evidence"><small>${LOGO_SM}Symbolic found three sources</small>
+      <ul class="srcs">${srcs.map(([who, when, text, rel]) => `<li><div class="sh"><b>${esc(who)}</b><span>${esc(when)}</span>${rated ? `<span class="badge ${REL_LABEL[rel][1]}">${REL_LABEL[rel][0]}</span>` : ''}</div><p>${esc(text)}</p></li>`).join('')}</ul></div>
+      <div class="opts">${s.order.map((o, i) => { const out = s.ruledOut.includes(i); return `<button class="opt ${out ? 'out' : ''}" data-opt="${i}" ${out ? 'disabled' : ''}><kbd>${'ABCD'[i]}</kbd><span><span class="ot">${esc(s.call.opts[o])}</span>${out ? '<span class="tag"><span class="badge secondary">Ruled out by Symbolic</span></span>' : ''}</span></button>`; }).join('')}</div>
+      <div class="autobar"><i data-auto></i></div>`;
   } else {
     body = `<p class="status" data-status></p>`;
   }
@@ -1359,7 +1442,7 @@ function updateCard() {
     html = `<span class="${r.scoop ? 'good' : 'dim'}">Published at ${r.at}${r.scoop ? ', a scoop' : ''}. ${fmtN(r.readers)} readers, ${r.saved.toFixed(1)} hours saved.${s.correction ? ' It ran with a correction.' : ''}</span>`;
   }
   if (st && st.innerHTML !== html) st.innerHTML = html;
-  const ab = cardEl.querySelector('[data-auto]'); if (ab && s.state === 'call') ab.style.width = `${clamp((gt - s.callT) / 3, 0, 1) * 100}%`;
+  const ab = cardEl.querySelector('[data-auto]'); if (ab && s.state === 'call') { const k = clamp((gt - s.callT) / CALL_TIME, 0, 1); ab.style.width = `${(1 - k) * 100}%`; ab.classList.toggle('late', s.callExpired || k > 0.7); }
 }
 function stageLabel(s) {
   if (s.state === 'new') return 'Waiting for an agent';
@@ -1483,7 +1566,7 @@ function chooseCap(c) {
   else game.caps.add(c.id);
   game.upIdx++; audio.good(); renderBay(); renderCard(true);
   ticker(`${c.name} is live on the desk. ${c.eff}`);
-  for (const s of stories) if (s.state === 'call' && c.id === 'factcheck') s.callT = gt;
+  for (const s of stories) if (s.state === 'call' && c.id === 'factcheck') s.ruledOut = shuffle([1, 2, 3].map(o => s.order.indexOf(o))).slice(0, 2);
   canvas.focus();
 }
 
@@ -1582,7 +1665,7 @@ function drawFrontPage(reason) {
     g.font = '700 92px Newsreader'; y = wrap(g, 'A quiet night: the desk filed no stories', M, y, W - 2 * M, 96);
   } else {
     g.font = '700 94px Newsreader'; y = wrap(g, lead.d.head, M, y, W - 2 * M, 98);
-    g.font = 'italic 400 40px Newsreader'; y = wrap(g, `${lead.order[lead.choice] === 0 ? lead.d.ok : lead.d.no} Filed at ${lead.result.at}${lead.result.scoop ? ', ahead of The Daily Rumor' : ''}.`, M, y + 6, W - 2 * M - 80, 50);
+    g.font = 'italic 400 40px Newsreader'; y = wrap(g, `${lead.call.opts[lead.order[lead.choice]]} Filed at ${lead.result.at}${lead.result.scoop ? ', ahead of The Daily Rumor' : ''}.`, M, y + 6, W - 2 * M - 80, 50);
   }
   y += 28;
   const imgW = 800, imgH = 450;
@@ -1606,7 +1689,7 @@ function drawFrontPage(reason) {
     g.fillStyle = ink; g.fillRect(cx, cy - 36, colW, 1.5);
     g.font = '400 16px Michroma'; g.fillStyle = '#6c6a62'; g.fillText(`${s.d.city}, ${s.d.beat}`.toUpperCase(), cx, cy - 8);
     g.fillStyle = ink; g.font = '700 38px Newsreader'; const ny = wrap(g, s.d.head, cx, cy + 34, colW, 42);
-    g.font = '400 24px Newsreader'; g.fillStyle = '#2b2a26'; wrap(g, `${s.order[s.choice] === 0 ? s.d.ok : s.d.no}${s.correction ? ' (Corrected.)' : ''}`, cx, ny + 4, colW, 32);
+    g.font = '400 24px Newsreader'; g.fillStyle = '#2b2a26'; wrap(g, `${s.call.opts[s.order[s.choice]]}${s.correction ? ' (Corrected.)' : ''}`, cx, ny + 4, colW, 32);
   });
   if (!rest.length) {
     g.font = 'italic 400 28px Newsreader'; g.fillStyle = '#44423c';
@@ -1648,7 +1731,7 @@ addEventListener('keydown', e => {
   const n = parseInt(k, 10);
   if (n >= 1 && n <= 9) { const list = stories.filter(s => !s.removed); if (list[n - 1]) { audio.click(); select(list[n - 1], true); } return; }
   if (k === 'enter' && selected && selected.state === 'new' && document.activeElement?.tagName !== 'BUTTON') { e.preventDefault(); assign(selected); return; }
-  if ((k === 'a' || k === 'b') && selected && selected.state === 'call') decide(selected, k === 'a' ? 0 : 1);
+  if ('abcd'.includes(k) && k.length === 1 && selected && selected.state === 'call') decide(selected, 'abcd'.indexOf(k));
 });
 addEventListener('blur', () => { if (state === 'playing' && !modalOpen) setPaused(true); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'playing' && !modalOpen) setPaused(true); });
@@ -1759,7 +1842,7 @@ async function boot() {
   $('#titleMark').classList.remove('animated');
   $('#loadNote').textContent = Object.keys(ASSETS).length ? '' : 'Generated audio and art are missing. The game runs with synth sound.';
 }
-window.__desk = { state: () => ({ state, gt, stories: stories.length, readers: game.readers, hours: game.hours, caps: [...game.caps], agents: agents.length, trust: game.trust }), skip: s => { gt += s; }, end: () => endShift('dawn'), select: i => { const l = stories.filter(s => !s.removed); if (l[i]) select(l[i], true); }, assignAll: () => { for (const s of stories) if (s.state === 'new') assign(s); }, callRight: () => { for (const s of stories) if (s.state === 'call') decide(s, s.correctIdx); } };
+window.__desk = { state: () => ({ state, gt, stories: stories.length, readers: game.readers, hours: game.hours, caps: [...game.caps], agents: agents.length, trust: game.trust }), skip: s => { gt += s; }, end: () => endShift('dawn'), select: i => { const l = stories.filter(s => !s.removed); if (l[i]) select(l[i], true); }, assignAll: () => { for (const s of stories) if (s.state === 'new') assign(s); }, callRight: () => { for (const s of stories.slice()) if (s.state === 'call') decide(s, s.correctIdx); } };
 boot();
 </script>
 </body>

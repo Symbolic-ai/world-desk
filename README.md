@@ -8,7 +8,8 @@ A retrofuturist 3D strategy game about running a newsroom's night shift with
 Stories break in cities around a halftone globe from 20:00 to 06:00. You send
 Symbolic's AI agents to cover them. Each story moves through research, writing,
 fact check and publishing. At the fact check, you read what Symbolic found and
-choose the version that the sources support. Publish before the rival paper to
+weigh three sources that disagree and choose, before a timer runs out, the one
+version of four that the latest authoritative source supports. Publish before the rival paper to
 get a scoop. The hours you save unlock Symbolic capabilities: transcription,
 document analysis, house style, fact check, AI routing, institutional memory,
 publishing packages and more agents. At dawn, the morning edition prints your
@@ -18,7 +19,7 @@ best stories.
 
 - Drag to turn the globe. Click a story to select it.
 - Press `Enter`, or click the story again, to assign an agent.
-- Press `A` or `B` to make a fact-check call.
+- Press `A` to `D` to make a fact-check call.
 - Press `1` to `9` to pick a story from the list.
 - Press `P` to pause and `M` to mute.
 
