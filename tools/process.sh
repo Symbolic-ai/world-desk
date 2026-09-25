@@ -26,8 +26,12 @@ for f in sorted(os.listdir('assets')):
     name, ext = os.path.splitext(f)
     if ext in mime:
         out[name] = f"data:{mime[ext]};base64," + base64.b64encode(open(f'assets/{f}', 'rb').read()).decode()
+for f in sorted(os.listdir('models')):
+    name, ext = os.path.splitext(f)
+    if ext == '.glb':
+        out['model_' + name] = "data:model/gltf-binary;base64," + base64.b64encode(open(f'models/{f}', 'rb').read()).decode()
 with open('assets.js', 'w') as fh:
-    fh.write('/* Generated with OpenRouter (Lyria 3, gpt-audio, Gemini 3 Pro Image). Packed by tools/process.sh. */\n')
+    fh.write('/* Generated with OpenRouter (Lyria 3, gpt-audio, Gemini 3 Pro Image) and Blender. Packed by tools/process.sh. */\n')
     fh.write('window.WD_ASSETS = ' + json.dumps(out) + ';\n')
 print(len(out), 'assets,', os.path.getsize('assets.js') // 1024, 'KB')
 PY

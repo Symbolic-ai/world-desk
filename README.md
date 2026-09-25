@@ -26,6 +26,12 @@ best stories.
 
 - One HTML file with [three.js](https://threejs.org) from a CDN. The file has no
   build step.
+- The Earth uses NASA Blue Marble and Black Marble maps (public domain), with a
+  ray-marched Rayleigh and Mie atmosphere, cloud shadows, and ocean sun glint.
+- The hub station and the satellites are Blender models. Build them with
+  `/Applications/Blender.app/Contents/MacOS/Blender -b -P tools/build_models.py`.
+- The UI uses the tokens and primitives of the Symbolic app's dark theme and the
+  Open Runde font (SIL OFL 1.1, see `fonts/OpenRunde-OFL.txt`).
 - The land mask comes from [world-atlas](https://github.com/topojson/world-atlas)
   (Natural Earth).
 - `assets.js` holds all generated media as data URIs, so the game also runs
