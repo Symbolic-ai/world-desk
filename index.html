@@ -486,7 +486,7 @@ const CALLS = {
     opts: ['The typhoon hit with sustained winds of 185 km/h and gusts of 230 km/h.', 'The typhoon hit with sustained winds of 230 km/h.', 'The typhoon hit with sustained winds of 250 km/h.', 'The typhoon hit with sustained winds of 285 km/h.'] },
 };
 const REL_LABEL = { primary: ['Latest, authoritative', 'success'], stale: ['Out of date', 'warning'], rumor: ['Unverified', 'error'] };
-const CALL_TIME = 20; // game seconds before the rival runs the story while you decide
+const CALL_TIME = 40; // game seconds before the rival runs the story while you decide
 
 const FLAVOR = [
   ['Transcribing three interviews', 'Reading a 214-page filing', 'Searching your archive for past coverage', 'Merging six wire updates', 'Transcribing a 40-minute briefing', 'Analyzing the source documents'],
@@ -1357,7 +1357,7 @@ function updateStories(dt) {
       if (s.prog[s.stage] < 1) s.prog[s.stage] = Math.min(1, s.prog[s.stage] + dt / BASE[s.stage] * stageRate(s.stage));
       if (s.prog[s.stage] >= 1) {
         if (s.stage === 2) { s.state = 'call'; s.callT = gt; s.ruledOut = game.caps.has('factcheck') ? shuffle([1, 2, 3].map(o => s.order.indexOf(o))).slice(0, 2) : []; audio.call(); audio.voice('v_call'); wave(s.n, col(C.orange), 1.6);
-          if (!game.tips.has('call')) { game.tips.add('call'); coach('Your call. The sources disagree. Trust the latest authoritative one, and watch for the traps in the wording.', 10); select(s, true); }
+          if (!game.tips.has('call')) { game.tips.add('call'); coach('Your call. The sources disagree. Trust the latest authoritative one, and watch for the traps in the wording. The Daily Rumor waits while you read, for up to 40 seconds.', 12); select(s, true); }
           else if (!selected || selected.state !== 'call') select(s, false);
         } else if (s.stage === 3) { publish(s); continue; }
         else { s.stage++; s.flavor = pick(FLAVOR[s.stage]); audio.stage(); wave(s.n, col(C.blueHi), 1.2); }
@@ -1365,6 +1365,7 @@ function updateStories(dt) {
       }
     } else if (s.state === 'call') {
       s.workT += dt;
+      if (!s.callExpired && !s.rival) s.deadline += dt;
       if (!s.callExpired && gt - s.callT >= CALL_TIME) {
         s.callExpired = true;
         if (!s.rival) { s.rival = true; s.deadline = Math.min(s.deadline, gt); s.label.classList.add('late'); audio.sting('sting_rival', 0.55); audio.voice('v_rival'); }
