@@ -472,6 +472,14 @@ camera.position.setLength(fitDistance());
 const rt = new THREE.WebGLRenderTarget(innerWidth * PR, innerHeight * PR, { type: THREE.HalfFloatType, samples: coarse ? 0 : 4 });
 const composer = new EffectComposer(renderer, rt);
 composer.addPass(new RenderPass(scene, camera));
+// Bloom blurs across mip levels, so one NaN pixel from any shader would spread into a black square.
+// This pass replaces non-finite pixels before bloom reads the frame.
+composer.addPass(new ShaderPass({
+  uniforms: { tDiffuse: { value: null } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv;
+    void main(){ vec4 c = texture2D(tDiffuse, vUv); bool bad = any(isnan(c)) || any(isinf(c)); gl_FragColor = bad ? vec4(0.0, 0.0, 0.0, 1.0) : min(c, vec4(64.0)); }`,
+}));
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.55, 0.7, 1.15);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
@@ -491,7 +499,7 @@ const finalPass = new ShaderPass({
       float sy = abs(uv.y - uSun.y);
       c += vec3(0.42, 0.62, 1.0) * exp(-sy * 260.0) * exp(-abs(d.x) * 1.4) * 0.75;
       float ang = atan(d.y, d.x);
-      c += vec3(1.0, 0.85, 0.7) * pow(abs(cos(ang * 3.0)), 60.0) * exp(-r * 9.0) * 0.35;
+      c += vec3(1.0, 0.85, 0.7) * pow(max(abs(cos(ang * 3.0)), 1e-6), 60.0) * exp(-r * 9.0) * 0.35;
       vec2 axis = vec2(0.5) - uSun;
       for (int i = 0; i < 6; i++) {
         float k = float(i);
@@ -580,7 +588,7 @@ const ocean = new THREE.Mesh(new THREE.SphereGeometry(R, 192, 96), new THREE.Sha
       vec3 dpx = dFdx(p), dpy = dFdy(p); float dhx = dFdx(h), dhy = dFdy(h);
       vec3 r1 = cross(dpy, n), r2 = cross(n, dpx); float det = dot(dpx, r1);
       vec3 grad = sign(det) * (dhx * r1 + dhy * r2) * uBump;
-      return normalize(abs(det) * n - grad);
+      vec3 b = abs(det) * n - grad; return dot(b, b) > 1e-20 ? normalize(b) : n;
     }
     void main(){
       vec3 N0 = normalize(vN), V = normalize(cameraPosition - vP), L = normalize(uSun);
@@ -601,14 +609,14 @@ const ocean = new THREE.Mesh(new THREE.SphereGeometry(R, 192, 96), new THREE.Sha
       vec3 col = albedo * max(dot(N, L), 0.0) * sunCol * tint * (1.0 - shadow * 0.55);
       col += albedo * vec3(0.05, 0.07, 0.12) * 0.25;
       vec3 H = normalize(L + V); float nh = max(dot(N0, H), 0.0);
-      float glint = (pow(nh, 480.0) * 2.2 + pow(nh, 40.0) * 0.07) * smoothstep(0.0, 0.12, mu);
+      float glint = (pow(max(nh, 1e-6), 480.0) * 2.2 + pow(max(nh, 1e-6), 40.0) * 0.07) * smoothstep(0.0, 0.12, mu);
       col += water * glint * sunCol * tint * (1.0 - over);
-      float fres = pow(1.0 - max(dot(N0, V), 0.0), 5.0);
+      float fres = pow(clamp(1.0 - dot(N0, V), 0.0, 1.0), 5.0);
       col += water * fres * vec3(0.22, 0.42, 0.95) * 0.5 * smoothstep(-0.1, 0.3, mu);
       float nightMask = 1.0 - smoothstep(-0.22, 0.06, mu);
       vec3 lights = night * smoothstep(0.002, 0.07, night.g) * vec3(1.0, 0.72, 0.42) * 20.0 * (1.0 - over * 0.7);
       col += lights * nightMask;
-      gl_FragColor = vec4(col, 1.0);
+      gl_FragColor = vec4(any(isnan(col)) ? vec3(0.0) : col, 1.0);
     }`,
 }));
 globe.add(ocean);
@@ -626,7 +634,7 @@ const clouds = new THREE.Mesh(new THREE.SphereGeometry(R * 1.008, 160, 80), new 
       float mu = dot(N, L);
       vec3 tint = mix(vec3(1.0, 0.42, 0.18), vec3(1.0), smoothstep(-0.02, 0.3, mu));
       vec3 c = vec3(1.0, 0.98, 0.96) * (max(mu, 0.0) * 1.35 + 0.012) * tint;
-      c += vec3(0.3, 0.5, 1.0) * pow(1.0 - max(dot(N, V), 0.0), 3.0) * 0.25 * smoothstep(-0.1, 0.3, mu);
+      c += vec3(0.3, 0.5, 1.0) * pow(clamp(1.0 - dot(N, V), 0.0, 1.0), 3.0) * 0.25 * smoothstep(-0.1, 0.3, mu);
       gl_FragColor = vec4(c, smoothstep(0.08, 0.9, a) * 0.9);
     }`,
   transparent: true, depthWrite: false,
@@ -651,7 +659,7 @@ const atmo = new THREE.Mesh(new THREE.SphereGeometry(R * 1.045, 128, 64), new TH
       vec3 tR = vec3(0.0), tM = vec3(0.0); float odR = 0.0, odM = 0.0;
       float mu = dot(r, pSun), mumu = mu * mu, gg = g * g;
       float pR = 3.0 / (16.0 * PI) * (1.0 + mumu);
-      float pM = 3.0 / (8.0 * PI) * ((1.0 - gg) * (mumu + 1.0)) / (pow(1.0 + gg - 2.0 * mu * g, 1.5) * (2.0 + gg));
+      float pM = 3.0 / (8.0 * PI) * ((1.0 - gg) * (mumu + 1.0)) / (pow(max(1.0 + gg - 2.0 * mu * g, 1e-4), 1.5) * (2.0 + gg));
       for (int i = 0; i < I_STEPS; i++) {
         vec3 ip = r0 + r * (iT + iStep * 0.5); float ih = length(ip) - rP;
         float sR = exp(-ih / shR) * iStep, sM = exp(-ih / shM) * iStep; odR += sR; odM += sM;
@@ -666,7 +674,7 @@ const atmo = new THREE.Mesh(new THREE.SphereGeometry(R * 1.045, 128, 64), new TH
       vec3 dir = normalize(vP - cameraPosition);
       vec3 ro = cameraPosition * uScale;
       vec3 c = atmosphere(dir, ro, normalize(uSun), 12.0, 6371.0, 6371.0 * 1.045, vec3(5.5e-3, 13.0e-3, 22.4e-3), 2.5e-3, 8.0, 1.2, 0.8);
-      gl_FragColor = vec4(c, 1.0);
+      gl_FragColor = vec4(any(isnan(c)) || any(isinf(c)) ? vec3(0.0) : c, 1.0);
     }`,
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
 }));
@@ -683,7 +691,7 @@ const holo = new THREE.Mesh(new THREE.SphereGeometry(R * 1.014, 128, 64), new TH
       float la = abs(fract(a + 0.5) - 0.5) / max(fwidth(a), 1e-4), lb = abs(fract(b + 0.5) - 0.5) / max(fwidth(b), 1e-4);
       float line = 1.0 - clamp(min(la, lb), 0.0, 1.0);
       float s = fract(lon / 6.2831853 + 0.5 - uTime * 0.025);
-      float sweep = exp(-pow((s - 0.5) * 30.0, 2.0));
+      float sd0 = (s - 0.5) * 30.0; float sweep = exp(-sd0 * sd0);
       float nightSide = 1.0 - smoothstep(-0.2, 0.3, dot(normalize(vN), normalize(uSun)));
       float facing = smoothstep(0.0, 0.35, dot(normalize(vN), normalize(cameraPosition - vP)));
       float al = (line * (0.05 + 0.1 * nightSide + 0.5 * sweep) + sweep * 0.03) * facing;
@@ -736,7 +744,7 @@ function buildDots() {
     uniforms: dotUniforms,
     vertexShader: `attribute float aR; uniform vec3 uSun; uniform float uScale, uTime; varying float vA;
       void main(){ vec3 n = normalize(position);
-        float lon = atan(n.z, -n.x); float s = fract(lon / 6.2831853 + 0.5 - uTime * 0.025); float sweep = exp(-pow((s - 0.5) * 22.0, 2.0));
+        float lon = atan(n.z, -n.x); float s = fract(lon / 6.2831853 + 0.5 - uTime * 0.025); float sd0 = (s - 0.5) * 22.0; float sweep = exp(-sd0 * sd0);
         float night = 1.0 - smoothstep(-0.25, 0.3, dot(n, uSun));
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         float facing = smoothstep(0.05, 0.4, dot(normalize(normalMatrix * n), normalize(-mv.xyz)));
@@ -1139,7 +1147,7 @@ const pillarMat = c => new THREE.ShaderMaterial({
   uniforms: { uC: { value: c }, uTime },
   vertexShader: `varying vec2 vUv; varying float vF; void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position, 1.0); vF = abs(dot(normalize(normalMatrix * normal), normalize(-mv.xyz))); gl_Position = projectionMatrix * mv; }`,
   fragmentShader: `uniform vec3 uC; uniform float uTime; varying vec2 vUv; varying float vF;
-    void main(){ float y = vUv.y; float bands = 0.55 + 0.45 * sin(y * 34.0 - uTime * 7.0); float a = pow(1.0 - y, 1.4) * bands * (0.35 + 0.65 * (1.0 - vF)); gl_FragColor = vec4(uC * a, a); }`,
+    void main(){ float y = vUv.y; float bands = 0.55 + 0.45 * sin(y * 34.0 - uTime * 7.0); float a = pow(clamp(1.0 - y, 0.0, 1.0), 1.4) * bands * (0.35 + 0.65 * (1.0 - clamp(vF, 0.0, 1.0))); gl_FragColor = vec4(uC * a, a); }`,
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
 });
 const ringGeo = new THREE.RingGeometry(0.13, 0.17, 48).rotateX(-Math.PI / 2);
