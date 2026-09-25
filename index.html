@@ -1,0 +1,1510 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Symbolic: World Desk</title>
+<meta name="description" content="Run a newsroom's night shift with Symbolic's AI agents. Cover the world's stories, make the editorial calls, and file the morning edition. A retrofuturist 3D game in your browser." />
+<meta name="theme-color" content="#0B1640" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="canonical" href="https://symbolic-ai.github.io/world-desk/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Symbolic" />
+<meta property="og:title" content="Symbolic: World Desk" />
+<meta property="og:description" content="Run a newsroom's night shift with Symbolic's AI agents. Cover the world's stories, make the editorial calls, and file the morning edition. A retrofuturist 3D game in your browser." />
+<meta property="og:url" content="https://symbolic-ai.github.io/world-desk/" />
+<meta property="og:image" content="https://symbolic-ai.github.io/world-desk/og.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Symbolic World Desk: a glowing halftone globe in a retrofuturist newsroom" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Symbolic: World Desk" />
+<meta name="twitter:description" content="Run a newsroom's night shift with Symbolic's AI agents. Cover the world's stories, make the editorial calls, and file the morning edition. A retrofuturist 3D game in your browser." />
+<meta name="twitter:image" content="https://symbolic-ai.github.io/world-desk/og.jpg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Michroma&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --night:#0B1640; --violet:#3A1F6B; --orange:#FF6D1B; --red:#F42C2B; --cream:#FDFCF5;
+  --blue:#0160F1; --blue-hi:#4F8DFF; --khaki:#D5D0B8; --teal:#10756A; --teal-hi:#5CC7B5; --gold:#FFC24B; --ink:#141A33;
+  --glass:rgba(10,20,60,.62); --line:rgba(253,252,245,.22); --line-hi:rgba(253,252,245,.5);
+  --display:'Michroma','Eurostile','Microgramma',sans-serif;
+  --serif:'Newsreader','Iowan Old Style',Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#070d2c;color:var(--cream);overflow:hidden;font-family:var(--serif);-webkit-font-smoothing:antialiased}
+canvas#scene{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+button{font:inherit;color:inherit}
+kbd{font-family:var(--display);font-size:9.5px;border:1px solid var(--line);border-radius:5px;padding:2px 5px;color:var(--khaki);white-space:nowrap}
+
+/* ---------- globe labels ---------- */
+#labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.bl{position:absolute;left:0;top:0;pointer-events:auto;cursor:pointer;background:rgba(10,20,60,.7);border:1px solid var(--line);border-radius:12px;padding:5px 10px 6px;white-space:nowrap;font-size:13.5px;line-height:1.2;transition:opacity .25s, background .2s, border-color .2s;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);will-change:transform}
+.bl b{font-family:var(--display);font-weight:400;font-size:9px;letter-spacing:.03em;display:block;color:var(--khaki);margin-bottom:2px}
+.bl .bar{display:block;height:2px;background:rgba(253,252,245,.16);margin-top:5px;border-radius:2px;overflow:hidden}
+.bl .bar i{display:block;height:100%;width:100%;background:var(--cream);transform-origin:left}
+.bl.breaking{border-color:var(--gold)} .bl.breaking b{color:var(--gold)}
+.bl.call{border-color:var(--orange);animation:blink 1s steps(2) infinite}
+.bl.work .bar i{background:var(--blue-hi)}
+.bl.late .bar i{background:var(--red)}
+.bl.sel{background:var(--cream);color:var(--ink);border-color:var(--cream)} .bl.sel b{color:#6c6a62}
+.bl.off{opacity:0;pointer-events:none}
+.bl.hub{background:transparent;border:0;backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:none;text-align:center}
+.bl.hub b{font-size:11px;color:var(--cream);text-shadow:0 0 16px rgba(79,141,255,.9)}
+.bl.hub span{font-style:italic;font-size:13px;color:var(--khaki)}
+@keyframes blink{50%{border-color:var(--line)}}
+
+/* ---------- HUD ---------- */
+.hud{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .8s}
+.hud.on{opacity:1}
+.hud>*{pointer-events:auto}
+.panel{background:var(--glass);border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.clock{position:absolute;top:20px;left:26px;pointer-events:none}
+.brand{font-family:var(--display);font-size:10.5px;letter-spacing:.03em;color:var(--khaki)}
+.brand span{color:var(--cream)}
+.brand .bm{width:14px;height:14px;vertical-align:-2px;margin-right:8px}
+.wordmark .mark{display:block;height:.6em;width:.6em;margin:0 0 .2em;filter:drop-shadow(0 0 30px rgba(79,141,255,.35))}
+#end h2 .bm2{width:.8em;height:.8em;vertical-align:-.05em;margin-right:.35em}
+.time{font-family:var(--display);font-size:46px;line-height:1;margin:8px 0 10px;font-variant-numeric:tabular-nums;text-shadow:0 0 30px rgba(255,109,27,.35)}
+.shift{width:230px;height:4px;border-radius:4px;background:rgba(253,252,245,.14);overflow:hidden}
+.shift i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue-hi),var(--orange))}
+.shiftTxt{font-style:italic;font-size:14.5px;color:var(--khaki);margin-top:7px}
+
+.scores{position:absolute;top:18px;right:24px;text-align:right;pointer-events:none}
+.readers b{font-family:var(--display);font-weight:400;font-size:40px;line-height:1;font-variant-numeric:tabular-nums;display:block;text-shadow:0 0 30px rgba(79,141,255,.45)}
+.readers span{font-style:italic;font-size:15px;color:var(--khaki)}
+.scores dl{display:grid;grid-template-columns:auto auto;gap:4px 14px;margin:12px 0 0;justify-content:end;align-items:center}
+.scores dt{font-style:italic;font-size:14.5px;color:var(--khaki)}
+.scores dd{margin:0;font-family:var(--display);font-size:13px;font-variant-numeric:tabular-nums}
+.trust{display:flex;gap:4px;justify-content:flex-end}
+.trust b{width:14px;height:7px;border-radius:7px;background:var(--cream);transition:.3s}
+.trust b.lost{background:transparent;box-shadow:inset 0 0 0 1.4px rgba(244,44,43,.95)}
+
+.queue{position:absolute;top:168px;right:24px;width:292px;max-height:calc(100vh - 420px);display:flex;flex-direction:column;padding:12px 10px 10px}
+.queue h3,.bay h3{font-family:var(--display);font-weight:400;font-size:10px;letter-spacing:.03em;color:var(--khaki);margin:2px 8px 10px;display:flex;justify-content:space-between}
+.queue h3 span,.bay h3 span{font-family:var(--serif);font-style:italic;font-size:13px;letter-spacing:0}
+.queue ol{list-style:none;margin:0;padding:0;overflow:hidden;display:flex;flex-direction:column;gap:5px}
+.queue li button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:20px 1fr auto;gap:2px 8px;width:100%;padding:8px 10px;border-radius:11px;cursor:pointer;border:1px solid transparent;transition:background .15s,border-color .15s}
+.queue li button:hover{background:rgba(253,252,245,.06)}
+.queue li button:focus-visible{outline:2px solid var(--orange);outline-offset:1px}
+.queue li.sel button{background:rgba(253,252,245,.1);border-color:var(--line-hi)}
+.queue .k{font-family:var(--display);font-size:9.5px;color:var(--khaki);grid-row:span 2;align-self:center}
+.queue .h{font-size:15px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.queue .c{font-family:var(--display);font-size:8.5px;letter-spacing:.03em;color:var(--khaki);align-self:center;justify-self:end}
+.queue .s{font-style:italic;font-size:13px;color:rgba(253,252,245,.66);grid-column:2/4;display:flex;justify-content:space-between;gap:8px}
+.queue .s em{font-style:normal;font-family:var(--display);font-size:9px;align-self:center}
+.queue li.call .s{color:var(--orange)}
+.queue li.breaking .c{color:var(--gold)}
+.queue li.done .h{color:var(--khaki)}
+.queue li.late .s em{color:#ff8a86}
+.queue .empty{font-style:italic;font-size:14px;color:var(--khaki);padding:4px 10px 8px}
+
+.card{position:absolute;left:50%;bottom:52px;transform:translateX(-62%);width:min(600px,calc(100vw - 380px));padding:18px 22px 18px}
+.card .meta{font-family:var(--display);font-size:9.5px;letter-spacing:.03em;color:var(--khaki);display:flex;gap:10px;align-items:center}
+.card .meta .brk{color:var(--night);background:var(--gold);padding:2px 7px;border-radius:10px}
+.card h2{font-weight:600;font-size:25px;line-height:1.18;margin:6px 0 12px}
+.pipe{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 12px;padding:0;list-style:none}
+.pipe li span{font-family:var(--display);font-size:8.5px;letter-spacing:.03em;color:rgba(253,252,245,.45);display:block;margin-bottom:6px}
+.pipe li.now span{color:var(--cream)} .pipe li.done span{color:var(--khaki)}
+.pipe i{display:block;height:4px;border-radius:4px;background:rgba(253,252,245,.14);overflow:hidden}
+.pipe i b{display:block;height:100%;width:0;background:var(--blue-hi);border-radius:4px}
+.pipe li.done i b{background:var(--khaki);width:100%}
+.status{font-size:16px;line-height:1.4;margin:0;min-height:22px}
+.status .dim{color:var(--khaki);font-style:italic}
+.status .warn{color:#ff8a86}
+.status .good{color:var(--teal-hi)}
+.actions{display:flex;gap:12px;align-items:center;margin-top:14px}
+.btn{font-family:var(--display);font-size:12px;letter-spacing:.03em;background:var(--cream);color:var(--night);border:0;border-radius:999px;padding:14px 24px;cursor:pointer;transition:transform .15s, box-shadow .2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(255,109,27,.35)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.btn.ghost{background:transparent;color:var(--cream);box-shadow:inset 0 0 0 1px var(--line-hi)}
+.btn:focus-visible,.opt:focus-visible,.capcard:focus-visible,.chip:focus-visible,.link:focus-visible{outline:2px solid var(--orange);outline-offset:3px}
+.evidence{border-left:3px solid var(--blue-hi);padding:4px 0 4px 14px;margin:2px 0 12px}
+.evidence small{font-family:var(--display);font-size:8.5px;letter-spacing:.03em;color:var(--khaki);display:block;margin-bottom:4px}
+.evidence p{margin:0;font-style:italic;font-size:17px;line-height:1.35}
+.opts{display:grid;gap:8px}
+.opt{all:unset;box-sizing:border-box;display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:baseline;padding:11px 14px;border-radius:12px;border:1px solid var(--line-hi);cursor:pointer;font-size:16.5px;line-height:1.3;transition:background .15s,border-color .15s}
+.opt:hover{background:rgba(253,252,245,.08)}
+.opt kbd{justify-self:start}
+.opt.rec{border-color:var(--teal-hi);background:rgba(16,117,106,.22)}
+.opt .tag{display:block;font-family:var(--display);font-size:8.5px;letter-spacing:.03em;color:var(--teal-hi);margin-top:5px}
+.autobar{height:3px;background:rgba(253,252,245,.14);border-radius:3px;overflow:hidden;margin-top:10px}
+.autobar i{display:block;height:100%;width:0;background:var(--teal-hi)}
+.card .empty{font-style:italic;color:var(--khaki);margin:0;font-size:16px}
+
+.coach{position:absolute;left:50%;top:22px;transform:translate(-50%,-6px);width:min(560px,calc(100vw - 640px));text-align:center;pointer-events:none;opacity:0;transition:opacity .35s, transform .35s}
+.coach.on{transform:translate(-50%,0)}
+.coach.on{opacity:1}
+.coach p{margin:0;display:inline-block;background:var(--cream);color:var(--ink);font-size:16px;line-height:1.35;padding:11px 18px;border-radius:16px;box-shadow:0 12px 40px rgba(5,8,30,.5)}
+
+.bay{position:absolute;right:24px;bottom:52px;width:292px;padding:12px 16px 14px}
+.agents{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.agents i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--blue-hi);box-shadow:0 0 10px rgba(79,141,255,.5) inset}
+.agents i.busy{background:var(--blue-hi);box-shadow:0 0 12px rgba(79,141,255,.9)}
+.caps{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.caps li{font-size:13px;font-style:italic;border:1px solid var(--line);border-radius:20px;padding:3px 10px}
+.caps li.none{border:0;padding:0;color:var(--khaki)}
+
+.ticker{position:absolute;left:0;right:0;bottom:0;height:38px;display:flex;align-items:center;gap:14px;padding:0 26px;background:linear-gradient(transparent,rgba(5,10,35,.8) 40%);pointer-events:none;font-size:15px;white-space:nowrap;overflow:hidden}
+.ticker .t{font-family:var(--display);font-size:10px;color:var(--orange)}
+.ticker .x{font-family:var(--serif)}
+.ticker .x::after{content:"";display:inline-block;width:8px;height:14px;background:var(--cream);margin-left:3px;vertical-align:-2px;animation:blink2 1s steps(2) infinite}
+@keyframes blink2{50%{opacity:0}}
+.floaters{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.floater{position:absolute;font-family:var(--display);font-size:12px;white-space:nowrap;transform:translate(-50%,-50%);animation:float 1.8s ease-out forwards;text-shadow:0 0 14px rgba(5,8,30,.95)}
+.floater.good{color:var(--teal-hi)} .floater.bad{color:#ff8a86} .floater.gold{color:var(--gold)}
+@keyframes float{0%{opacity:0;transform:translate(-50%,-20%)}12%{opacity:1}100%{opacity:0;transform:translate(-50%,-240%)}}
+
+/* ---------- screens ---------- */
+.screen{position:fixed;inset:0;display:none}
+.screen.on{display:block}
+#title{background:linear-gradient(90deg,rgba(7,13,44,.88) 0%,rgba(7,13,44,.45) 42%,transparent 66%)}
+#title .inner{position:absolute;left:clamp(24px,7vw,112px);bottom:clamp(36px,11vh,120px);max-width:640px}
+.wordmark{font-family:var(--display);font-weight:400;font-size:clamp(44px,8vw,122px);line-height:.92;margin:0;letter-spacing:.01em;text-shadow:0 0 60px rgba(79,141,255,.4)}
+.subtitle{font-style:italic;font-weight:400;font-size:clamp(30px,4.3vw,62px);margin:.08em 0 .45em;color:var(--khaki);line-height:1}
+.lede{font-size:clamp(18px,1.5vw,21.5px);line-height:1.45;max-width:40ch;margin:0 0 28px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.controls{font-size:15px;line-height:1.65;color:rgba(253,252,245,.72);margin-top:24px;max-width:50ch}
+.loadnote{font-style:italic;font-size:14px;color:var(--khaki)}
+.corner{position:fixed;top:18px;right:22px;z-index:6;display:flex;gap:8px}
+.hud.on ~ .corner{top:auto;bottom:48px;right:auto;left:26px}
+.chip{font-family:var(--serif);font-style:italic;font-size:14.5px;background:var(--glass);color:var(--cream);border:1px solid var(--line);border-radius:30px;padding:6px 13px;cursor:pointer}
+
+#pause,#modal{background:rgba(7,13,44,.6);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+#pause .inner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;width:min(520px,90vw)}
+#pause h2,#modal h2{font-family:var(--display);font-weight:400;font-size:clamp(30px,4.2vw,50px);margin:0 0 10px}
+#pause p{font-size:19px;line-height:1.45;margin:0 0 26px}
+#pause .row{justify-content:center}
+#modal .inner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(1000px,94vw);text-align:center}
+#modal .inner>p{font-size:19px;margin:0 0 28px;color:var(--khaki);font-style:italic}
+.capgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.capcard{all:unset;box-sizing:border-box;cursor:pointer;background:var(--cream);color:var(--ink);border-radius:20px;overflow:hidden;text-align:left;display:flex;flex-direction:column;transition:transform .2s, box-shadow .2s;box-shadow:0 20px 60px rgba(5,8,30,.55);animation:dealt .5s cubic-bezier(.2,.8,.2,1) both}
+.capcard:nth-child(2){animation-delay:.08s} .capcard:nth-child(3){animation-delay:.16s}
+.capcard:hover{transform:translateY(-6px) rotate(-.4deg);box-shadow:0 30px 70px rgba(255,109,27,.35)}
+.capcard .art{aspect-ratio:1.45;background:#efe9d8 center/cover no-repeat;border-bottom:1px solid rgba(20,26,51,.15)}
+.capcard .txt{padding:16px 18px 18px;display:flex;flex-direction:column;gap:7px;flex:1}
+.capcard b{font-family:var(--display);font-weight:400;font-size:14px;letter-spacing:.02em;display:flex;justify-content:space-between;align-items:center}
+.capcard b kbd{color:#6c6a62;border-color:rgba(20,26,51,.25)}
+.capcard .eff{font-size:17px;line-height:1.3;font-weight:500}
+.capcard .copy{font-size:14.5px;line-height:1.35;font-style:italic;color:#55534b;margin-top:auto}
+@keyframes dealt{from{opacity:0;transform:translateY(40px) rotate(2deg)}}
+
+#end{background:radial-gradient(ellipse at 30% 50%,rgba(255,109,27,.18),rgba(7,13,44,.72) 70%)}
+#end .paperwrap{position:absolute;left:clamp(16px,5vw,90px);top:50%;transform:translateY(-50%);height:min(88vh,1000px);aspect-ratio:1400/1900;perspective:1600px}
+#end canvas.paper{width:100%;height:100%;display:block;box-shadow:0 40px 100px rgba(0,0,0,.6);border-radius:2px}
+#end.show canvas.paper{animation:spin 2.3s cubic-bezier(.15,.75,.25,1) both}
+@keyframes spin{0%{transform:scale(.05) rotate(-1080deg);opacity:0}15%{opacity:1}100%{transform:scale(1) rotate(-1.5deg)}}
+#end .panel{position:absolute;right:clamp(16px,5vw,84px);top:50%;transform:translateY(-50%);width:min(430px,92vw);padding:28px 30px 30px;opacity:0;transition:opacity .8s 1.8s}
+#end.show .panel{opacity:1}
+#end h2{font-family:var(--display);font-weight:400;font-size:clamp(26px,2.8vw,36px);margin:0}
+#end .sub{font-style:italic;color:var(--khaki);font-size:17px;margin:6px 0 0}
+#end dl{display:grid;grid-template-columns:1fr auto;gap:10px 18px;margin:20px 0 18px;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+#end dt{font-style:italic;color:var(--khaki);font-size:16px}
+#end dd{margin:0;font-family:var(--display);font-size:13px;text-align:right;align-self:center;font-variant-numeric:tabular-nums}
+#end dd.big{font-size:24px}
+#end .about{font-size:16px;line-height:1.45;margin:0 0 20px}
+.link{color:var(--cream);font-style:italic;font-size:16px}
+#flash{position:fixed;inset:0;background:#fff4e0;opacity:0;pointer-events:none;transition:opacity 1.2s ease}
+#splash{position:fixed;inset:0;background:#070d2c center/cover no-repeat;opacity:1;transition:opacity 1.4s ease;pointer-events:none}
+#splash.gone{opacity:0}
+
+@media (max-width:820px){
+  .queue{display:none}
+  .clock{top:12px;left:14px} .time{font-size:30px;margin:4px 0 6px} .shift{width:150px} .shiftTxt{font-size:12.5px}
+  .scores{top:10px;right:14px} .readers b{font-size:26px} .scores dl{gap:2px 10px;margin-top:6px}
+  .card{left:10px;right:10px;width:auto;transform:none;bottom:44px;padding:14px 16px}
+  .card h2{font-size:19px;margin-bottom:8px}
+  .coach{left:10px;right:10px;width:auto;top:auto;bottom:calc(44px + 46vh);transform:none}
+  .coach.on{transform:none}
+  .bay{display:none}
+  .capgrid{grid-template-columns:1fr;gap:10px;max-height:72vh;overflow:auto}
+  .capcard{flex-direction:row} .capcard .art{aspect-ratio:1;width:110px;border-bottom:0}
+  #end .paperwrap{left:50%;top:14px;transform:translateX(-50%);height:52vh}
+  #end .panel{top:auto;bottom:12px;transform:none;left:50%;right:auto;translate:-50% 0;max-height:42vh;overflow:auto;padding:18px 20px}
+  .hud.on ~ .corner{bottom:auto;top:auto;display:none}
+  body:not([data-state=title]) .corner{display:none}
+  .bl.hub{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  #end.show canvas.paper{animation:none}
+  .floater{animation-duration:.01s}
+  .capcard{animation:none}
+}
+</style>
+<script src="assets.js"></script>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}
+</script>
+</head>
+<body data-state="title">
+<canvas id="scene" tabindex="-1" aria-label="World desk globe"></canvas>
+<div id="labels"></div>
+
+<div class="hud" id="hud">
+  <header class="clock" aria-live="off">
+    <div class="brand"><img class="bm" src="logo.png" alt="" />Symbolic <span>World desk</span></div>
+    <div class="time" id="clock">20:00</div>
+    <div class="shift"><i id="shiftBar"></i></div>
+    <div class="shiftTxt" id="shiftTxt">10 hours to the morning edition</div>
+  </header>
+  <section class="scores">
+    <div class="readers"><b id="readers">0</b><span>readers reached</span></div>
+    <dl>
+      <dt>Hours saved</dt><dd id="hoursSaved">0</dd>
+      <dt>Scoops</dt><dd id="scoops">0</dd>
+      <dt>Trust</dt><dd><span class="trust" id="trust"><b></b><b></b><b></b><b></b><b></b></span></dd>
+    </dl>
+  </section>
+  <aside class="queue panel" aria-label="Stories">
+    <h3>Stories <span id="qcount">none yet</span></h3>
+    <ol id="queue"></ol>
+  </aside>
+  <div class="coach" id="coach"><p id="coachText"></p></div>
+  <section class="card panel" id="card" aria-live="polite"></section>
+  <section class="bay panel" aria-label="Your desk">
+    <h3>Agents <span id="agentCount"></span></h3>
+    <div class="agents" id="agents"></div>
+    <h3>Capabilities <span id="capCount"></span></h3>
+    <ul class="caps" id="caps"><li class="none">None installed yet</li></ul>
+  </section>
+  <div class="ticker"><span class="t" id="tickT">20:00</span><span class="x" id="tickX">Desk online.</span></div>
+</div>
+<div class="floaters" id="floaters"></div>
+<div class="corner" id="corner"><button class="chip" id="soundBtn" aria-pressed="true">Sound on</button></div>
+
+<section class="screen on" id="title">
+  <div class="inner">
+    <h1 class="wordmark"><img class="mark" src="logo.png" alt="" />Symbolic</h1>
+    <p class="subtitle">World Desk</p>
+    <p class="lede">It is 20:00 and you have the night desk. Stories will break around the world until dawn. Send Symbolic's agents to cover them, make the editorial calls, and put the best of the night in the morning edition.</p>
+    <div class="row"><button class="btn" id="startBtn" disabled>Loading the desk</button><span class="loadnote" id="loadNote"></span></div>
+    <p class="controls">Drag to turn the globe. Select a story, then assign an agent. Keys: <kbd>1</kbd> to <kbd>9</kbd> pick a story, <kbd>Enter</kbd> assigns, <kbd>A</kbd> or <kbd>B</kbd> makes a call, <kbd>P</kbd> pauses, <kbd>M</kbd> mutes.</p>
+  </div>
+</section>
+<section class="screen" id="pause">
+  <div class="inner"><h2>Paused</h2><p>The wires hold until you return.</p><div class="row"><button class="btn" id="resumeBtn">Resume the shift</button><button class="btn ghost" id="restartBtn">Start over</button></div></div>
+</section>
+<section class="screen" id="modal" aria-modal="true" role="dialog" aria-labelledby="modalH">
+  <div class="inner"><h2 id="modalH">New capability</h2><p>Your desk saved enough hours to install one more Symbolic capability. Pick one.</p><div class="capgrid" id="capgrid"></div></div>
+</section>
+<section class="screen" id="end">
+  <div class="paperwrap"><canvas class="paper" id="paper" width="1400" height="1900"></canvas></div>
+  <div class="panel">
+    <h2 id="endH"><img class="bm2" src="logo.png" alt="" /><span>Morning edition</span></h2>
+    <p class="sub" id="endSub"></p>
+    <dl id="endStats"></dl>
+    <p class="about" id="endAbout"></p>
+    <div class="row"><button class="btn" id="againBtn">Run another shift</button><a class="link" href="https://www.symbolic.ai" target="_blank" rel="noopener">See Symbolic for real</a></div>
+  </div>
+</section>
+<div id="flash"></div>
+<div id="splash"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* =========================================================
+   Palette, helpers
+   ========================================================= */
+const C = { night:'#0B1640', violet:'#3A1F6B', orange:'#FF6D1B', red:'#F42C2B', cream:'#FDFCF5', blue:'#0160F1', blueHi:'#4F8DFF', khaki:'#D5D0B8', teal:'#10756A', tealHi:'#5CC7B5', gold:'#FFC24B', ink:'#141A33' };
+const col = h => new THREE.Color(h);
+const hdr = (h, k) => new THREE.Color(h).multiplyScalar(k);
+const $ = s => document.querySelector(s);
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[(Math.random() * a.length) | 0];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const damp = (a, b, l, dt) => a + (b - a) * (1 - Math.exp(-l * dt));
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+const fmtN = n => n >= 1e6 ? `${(n / 1e6).toFixed(2)} M` : n >= 1e4 ? `${Math.round(n / 1e3)} k` : `${Math.round(n)}`;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const coarse = matchMedia('(pointer: coarse)').matches;
+const ASSETS = window.WD_ASSETS || {};
+const DEG = Math.PI / 180;
+const R = 5;
+const SHIFT = 300;            // seconds of play for the whole night
+const HOUR = SHIFT / 10;      // one game hour, in seconds
+const TURBO = new URLSearchParams(location.search).has('turbo');
+const OG = new URLSearchParams(location.search).has('og'); // framing used to render the social preview image
+
+function ll2v(lat, lon, r = 1, out = new THREE.Vector3()) {
+  const phi = (90 - lat) * DEG, th = (lon + 180) * DEG;
+  return out.set(-r * Math.sin(phi) * Math.cos(th), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(th));
+}
+const clockText = t => { const m = 20 * 60 + Math.floor(t / HOUR * 60); const h = Math.floor(m / 60) % 24, mm = m % 60; return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`; };
+
+/* =========================================================
+   Content: the night's stories
+   ========================================================= */
+const STORIES = [
+  ['Rotterdam', 51.92, 4.48, 'Business', 'Port strike', "Dockworkers strike at Europe's largest port", 180, 'The strike halts 40 percent of container traffic.', 'The strike halts all container traffic.', 'Port authority data: 3 of 8 terminals closed, about 40 percent of volume.'],
+  ['Sendai', 38.27, 140.87, 'Science', 'Earthquake', 'Strong earthquake shakes northern Japan', 420, 'Magnitude 7.1, the national agency says.', 'Magnitude 7.4, early social posts say.', 'The meteorological agency revised its estimate to 7.1 at 03:12.'],
+  ['São Paulo', -23.55, -46.63, 'Markets', 'Rate cut', 'Central bank cuts rates by half a point', 150, 'The bank cut its rate by 0.50 points.', 'The bank cut its rate by 0.75 points.', 'Bank statement: the benchmark rate falls 50 basis points.'],
+  ['Lagos', 6.52, 3.38, 'Tech', 'Startup campus', 'Lagos opens its largest startup campus', 90, 'The campus has 3,000 desks.', 'The campus has 30,000 desks.', 'Developer filing: 3,000 workstations on six floors.'],
+  ['Mumbai', 19.07, 72.88, 'City', 'Rail floods', 'Monsoon floods stop suburban trains', 380, 'Partial service returns Thursday.', 'Trains stay suspended for a month.', 'Operator notice: partial service from Thursday morning.'],
+  ['Reykjavík', 64.15, -21.94, 'Science', 'Eruption', "Volcano erupts near Iceland's capital", 260, 'Flights continue at the main airport.', 'All flights in Iceland are grounded.', 'Airport operator: open, with no ash on the flight paths.'],
+  ['Nairobi', -1.29, 36.82, 'Energy', 'Solar deal', 'Kenya signs a record solar deal', 110, 'The deal is worth $12 billion over ten years.', 'The deal is worth $1.2 billion over ten years.', 'Energy ministry release: 12 billion dollars across a ten-year term.'],
+  ['Chicago', 41.88, -87.63, 'Politics', 'Transit budget', 'City council passes the transit budget', 140, 'The budget passed 31 to 19.', 'The budget passed unanimously.', 'Council clerk record: 31 yes, 19 no.'],
+  ['Sydney', -33.87, 151.21, 'Climate', 'Heat record', 'Heatwave breaks a record from 1939', 230, 'Penrith reached 46.1 °C.', 'The whole city passed 48 °C.', 'Weather bureau: 46.1 °C at Penrith, above the 1939 record of 45.8 °C.'],
+  ['Berlin', 52.52, 13.40, 'Politics', 'Pension deal', 'Coalition agrees on pension reform', 200, 'The retirement age stays at 67.', 'The retirement age rises to 70.', 'Coalition paper, page 4: the retirement age stays at 67.'],
+  ['Seoul', 37.57, 126.98, 'Business', 'Chip profits', 'Chipmaker reports a record quarter', 310, 'Operating profit tripled.', 'Operating profit rose 21 percent.', 'Earnings release: operating profit up 212 percent on the year.'],
+  ['Mexico City', 19.43, -99.13, 'City', 'Water limits', 'Water rationing covers the capital', 270, 'Rationing applies to all 16 boroughs.', 'Rationing applies to nine boroughs.', 'Water commission notice: all 16 boroughs, from Monday.'],
+  ['Cairo', 30.04, 31.24, 'Culture', 'Museum opens', 'Grand museum opens after 20 years', 330, 'The museum holds 50,000 objects.', 'The museum holds 5 million objects.', 'Ministry catalog: about 50,000 artifacts on display.'],
+  ['Vancouver', 49.28, -123.12, 'Climate', 'Wildfire', 'Wildfire forces evacuations north of Vancouver', 240, '24,000 residents must leave.', '2,400 residents must leave.', 'Wildfire service: 24,100 residents under evacuation order.'],
+  ['Singapore', 1.35, 103.82, 'Transport', 'Terminal 5', 'Airport sets a date for Terminal 5', 120, 'The terminal opens in the mid-2030s.', 'The terminal opens next year.', 'Transport ministry: opening planned for the mid-2030s.'],
+  ['Buenos Aires', -34.60, -58.38, 'Markets', 'Inflation', 'Inflation slows for a sixth month', 130, 'Prices rose 2.2 percent in the month.', 'Prices rose 2.2 percent in the year.', 'Statistics office: 2.2 percent month on month, 31 percent year on year.'],
+  ['Paris', 48.86, 2.35, 'Culture', 'Louvre entrance', 'Louvre plans a new east entrance', 280, 'The entrance opens in 2031.', 'The entrance opens this summer.', 'Culture ministry: the works finish in 2031.'],
+  ['Johannesburg', -26.20, 28.05, 'Energy', 'Power cuts', 'South Africa passes 300 days without power cuts', 160, 'It is 300 days since the last scheduled cut.', 'The grid had no outages all year.', 'Utility statement: 300 days since the last scheduled cut. Local faults continue.'],
+  ['Anchorage', 61.22, -149.90, 'Climate', 'Sea ice', 'Arctic sea ice hits a record low', 350, 'It is the lowest since satellite records began in 1979.', 'It is the lowest in 10,000 years.', 'Ice data center: the lowest September extent in the satellite record, which starts in 1979.'],
+  ['Istanbul', 41.01, 28.98, 'Transport', 'Metro tunnel', 'New metro line opens under the Bosphorus', 170, 'The crossing takes 4 minutes.', 'The crossing takes 40 seconds.', 'Metro operator: 4 minutes between the two shore stations.'],
+  ['Tokyo', 35.68, 139.69, 'Markets', 'Yen low', 'Yen falls to a 36-year low', 400, 'It is the weakest level since 1990.', 'It is the weakest level ever recorded.', 'Central bank data: the weakest level since April 1990.'],
+  ['Honolulu', 21.31, -157.86, 'Science', 'Tsunami warning', 'Tsunami warning lifted for Hawaii', 210, 'The warning was lifted at 04:10.', 'No warning was ever issued.', 'Warning center bulletin 4: warning cancelled at 04:10 local time.'],
+  ['Madrid', 40.42, -3.70, 'Sport', 'Stadium roof', 'Madrid approves a new stadium roof', 95, 'The roof costs €300 million.', 'The roof costs €3 billion.', 'City planning file: a budget of 300 million euros.'],
+  ['Jakarta', -6.21, 106.85, 'Politics', 'Capital move', 'Ministries begin the move to the new capital', 190, 'Four ministries move this year.', 'Every ministry moves this year.', 'Cabinet secretary: four ministries in the first phase.'],
+  ['Lima', -12.05, -77.04, 'Science', 'Fossil whale', 'Scientists find a giant fossil whale', 150, 'The whale weighed up to 180 tonnes.', 'The whale weighed up to 1,800 tonnes.', 'Journal paper: an estimated mass of 85 to 180 tonnes.'],
+  ['Dubai', 25.20, 55.27, 'Transport', 'Air taxis', 'The first air taxi route opens', 140, 'Trips take 10 minutes.', 'Trips take 1 minute.', 'Transport authority: 10 minutes from the airport to the marina.'],
+  ['Toronto', 43.65, -79.38, 'City', 'Housing plan', 'Toronto approves 65,000 new homes', 160, 'The plan covers 65,000 homes.', 'The plan covers 6,500 homes.', 'Council motion: 65,000 homes by 2031.'],
+  ['Oslo', 59.91, 10.75, 'Energy', 'Electric cars', 'Nine in ten new cars in Norway are electric', 80, 'Electric cars took 91 percent of sales.', 'Electric cars took 100 percent of sales.', 'Road federation: 91 percent battery electric in August.'],
+  ['Cape Town', -33.92, 18.42, 'Science', 'Telescope', 'Telescope array sends its first image', 120, '64 dishes made the image.', 'All 197 dishes made the image.', 'Observatory release: 64 of the 197 planned dishes made the image.'],
+  ['Manila', 14.60, 120.98, 'Climate', 'Typhoon', 'Typhoon makes landfall in Luzon', 300, 'Winds reached 185 km/h.', 'Winds reached 285 km/h.', 'Weather service: sustained winds of 185 km/h at landfall.'],
+].map(([city, lat, lon, beat, tag, head, reachK, ok, no, ev]) => ({ city, lat, lon, beat, tag, head, reach: reachK * 1000, ok, no, ev }));
+
+const FLAVOR = [
+  ['Transcribing three interviews', 'Reading a 214-page filing', 'Searching your archive for past coverage', 'Merging six wire updates', 'Transcribing a 40-minute briefing', 'Analyzing the source documents'],
+  ['Drafting in your house style', 'Applying your style guide', 'Writing to your standard format', 'Drafting in your publication voice'],
+  ['Checking every claim against the sources'],
+  ['Writing the headline and social posts', 'Packaging the story for the site and newsletter'],
+];
+const STAGE_NAMES = ['Research', 'Write', 'Fact check', 'Publish'];
+const BASE = [11, 8, 3.2, 3.4];          // seconds per stage at speed 1
+const MANUAL_HOURS = [3.5, 2.5, 2.5, 1]; // what a desk without Symbolic spends
+const CAPS = [
+  { id:'transcribe', name:'Transcription', eff:'Research runs 1.8 times faster.', copy:'Symbolic transcribes interviews, meetings and video in minutes.' },
+  { id:'documents', name:'Document analysis', eff:'Research runs 1.5 times faster.', copy:'It reads 200-page filings and pulls out what matters.' },
+  { id:'style', name:'House style', eff:'Writing runs twice as fast.', copy:'Drafts follow your voices, formats and style rules.' },
+  { id:'factcheck', name:'Fact check', eff:'Symbolic recommends each call and makes it for you after 3 seconds.', copy:'It checks every claim against your sources.' },
+  { id:'routing', name:'AI routing', eff:'Every stage runs 1.3 times faster.', copy:'Each task goes to the model that does it best.' },
+  { id:'memory', name:'Institutional memory', eff:'A story near one you covered starts with half its research done.', copy:'Your archive, templates and prompts, ready for reuse.' },
+  { id:'packages', name:'Publishing packages', eff:'Stories reach 1.5 times more readers and publish twice as fast.', copy:'Headlines, social posts and images, ready with the story.' },
+  { id:'seats', name:'Two more agents', eff:'Add two agents to the desk.', copy:'Scale the desk, not the headcount.', repeat: true },
+];
+const UPGRADE_AT = [8, 24, 44, 70, 100, 135, 175, 220, 270];
+
+/* =========================================================
+   Renderer, scene, post
+   ========================================================= */
+const canvas = $('#scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+const PR = Math.min(devicePixelRatio, coarse ? 1.5 : 1.75);
+renderer.setPixelRatio(PR);
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.toneMappingExposure = 1.0;
+const scene = new THREE.Scene();
+scene.background = col('#060b27');
+const camera = new THREE.PerspectiveCamera(36, innerWidth / innerHeight, 0.1, 600);
+camera.position.set(0, 5, 26.5);
+function applyViewOffset() {
+  const w = innerWidth, h = innerHeight;
+  if (OG) camera.setViewOffset(w, h, -w * 0.2, h * 0.02, w, h);
+  else if (w > 820) camera.setViewOffset(w, h, w * 0.075, h * 0.015, w, h);
+  else camera.setViewOffset(w, h, 0, h * 0.1, w, h);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+// Keep the whole globe in view on narrow screens: fit its radius to the horizontal field of view.
+function fitDistance() {
+  const tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
+  return Math.max(26.5, (R * 1.2) / tanH);
+}
+applyViewOffset();
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.07; controls.enablePan = false;
+controls.minDistance = 13; controls.maxDistance = Math.max(32, fitDistance() + 6); controls.rotateSpeed = 0.55;
+controls.minPolarAngle = 0.35; controls.maxPolarAngle = 2.3;
+controls.target.set(0, 0.5, 0);
+controls.autoRotate = true; controls.autoRotateSpeed = 0.35;
+camera.position.setLength(fitDistance());
+
+const rt = new THREE.WebGLRenderTarget(innerWidth * PR, innerHeight * PR, { type: THREE.HalfFloatType, samples: coarse ? 0 : 4 });
+const composer = new EffectComposer(renderer, rt);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.9, 0.6, 0.95);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+const finalPass = new ShaderPass({
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2(innerWidth * PR, innerHeight * PR) }, uRed: { value: 0 }, uDawn: { value: 0 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float uTime, uRed, uDawn; uniform vec2 uRes; varying vec2 vUv;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
+    void main(){
+      vec2 c = vUv - 0.5; float r2 = dot(c, c);
+      vec2 off = c * 0.0022 * (0.5 + r2 * 3.0);
+      vec3 col = vec3(texture2D(tDiffuse, vUv + off).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - off).b);
+      col *= 1.0 - smoothstep(0.16, 0.62, r2) * 0.55;
+      col = mix(col, vec3(0.96, 0.17, 0.17), uRed * smoothstep(0.08, 0.55, r2) * 0.6);
+      col += vec3(1.0, 0.55, 0.25) * uDawn * (0.25 - r2 * 0.3);
+      col += (hash(vUv * uRes + fract(uTime) * 91.7) - 0.5) * 0.04;
+      col *= 0.99 + 0.01 * sin(vUv.y * uRes.y * 1.5708);
+      gl_FragColor = vec4(col, 1.0);
+    }`,
+});
+composer.addPass(finalPass);
+
+/* =========================================================
+   Textures
+   ========================================================= */
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const glowTex = canvasTex(128, 128, (g, w) => {
+  const r = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+  r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.22, 'rgba(255,255,255,.55)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r; g.fillRect(0, 0, w, w);
+});
+glowTex.colorSpace = THREE.NoColorSpace;
+
+/* =========================================================
+   Globe
+   ========================================================= */
+const sunDir = new THREE.Vector3(0.3, 0.25, -1).normalize();
+const uTime = { value: 0 };
+const globe = new THREE.Group(); scene.add(globe);
+
+const ocean = new THREE.Mesh(new THREE.SphereGeometry(R, 128, 64), new THREE.ShaderMaterial({
+  uniforms: { uSun: { value: sunDir }, uDeep: { value: col('#0b1d5c') }, uRim: { value: hdr(C.blueHi, 1) }, uGrat: { value: col(C.cream) }, uTerm: { value: col(C.orange) } },
+  vertexShader: `varying vec3 vN; varying vec3 vW; varying vec3 vP;
+    void main(){ vP = position; vW = normalize((modelMatrix * vec4(position, 0.0)).xyz); vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform vec3 uSun, uDeep, uRim, uGrat, uTerm; varying vec3 vN; varying vec3 vW; varying vec3 vP;
+    void main(){
+      float sd = dot(vW, uSun);
+      float day = smoothstep(-0.25, 0.35, sd);
+      vec3 c = uDeep * (0.3 + 0.85 * day);
+      c += uRim * pow(1.0 - clamp(vN.z, 0.0, 1.0), 2.6) * 0.5;
+      vec3 p = normalize(vP);
+      float lat = asin(clamp(p.y, -1.0, 1.0)); float lon = atan(p.z, -p.x);
+      float a = lat / 0.2617994, b = lon / 0.2617994;
+      float la = abs(fract(a + 0.5) - 0.5) / max(fwidth(a), 1e-4); float lb = abs(fract(b + 0.5) - 0.5) / max(fwidth(b), 1e-4);
+      c += uGrat * (1.0 - clamp(min(la, lb), 0.0, 1.0)) * 0.09;
+      c += uTerm * exp(-pow(sd * 5.0, 2.0)) * 0.2;
+      gl_FragColor = vec4(c, 1.0);
+    }`,
+}));
+globe.add(ocean);
+
+const atmo = new THREE.Mesh(new THREE.SphereGeometry(R * 1.14, 96, 48), new THREE.ShaderMaterial({
+  uniforms: { uSun: { value: sunDir }, uA: { value: hdr(C.blueHi, 1.4) }, uB: { value: hdr(C.orange, 1.5) } },
+  vertexShader: `varying vec3 vN; varying vec3 vW; void main(){ vN = normalize(normalMatrix * normal); vW = normalize((modelMatrix * vec4(position, 0.0)).xyz); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform vec3 uSun, uA, uB; varying vec3 vN; varying vec3 vW;
+    void main(){ float i = pow(clamp(0.62 - dot(vN, vec3(0.0, 0.0, 1.0)), 0.0, 2.0), 4.0) * 0.55;
+      vec3 c = mix(uA, uB, smoothstep(-0.3, 0.5, dot(vW, uSun)) * 0.8);
+      gl_FragColor = vec4(c * i, i); }`,
+  side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false,
+}));
+globe.add(atmo);
+
+let landMask = null;
+async function loadLand() {
+  const W = 2048, H = 1024, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  try {
+    const [topo, tc, d3] = await Promise.all([
+      fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json').then(r => { if (!r.ok) throw new Error('map'); return r.json(); }),
+      import('https://cdn.jsdelivr.net/npm/topojson-client@3/+esm'),
+      import('https://cdn.jsdelivr.net/npm/d3-geo@3/+esm'),
+    ]);
+    const proj = d3.geoEquirectangular().scale(W / (2 * Math.PI)).translate([W / 2, H / 2]);
+    g.fillStyle = '#fff'; g.beginPath(); d3.geoPath(proj, g)(tc.feature(topo, topo.objects.land)); g.fill();
+  } catch (e) {
+    g.fillStyle = '#fff';
+    for (let i = 0; i < 60; i++) { g.beginPath(); g.ellipse(Math.random() * W, H * 0.15 + Math.random() * H * 0.7, 40 + Math.random() * 160, 30 + Math.random() * 110, Math.random() * 3, 0, 7); g.fill(); }
+  }
+  landMask = { c, W, H, data: g.getImageData(0, 0, W, H).data };
+}
+const isLand = (lat, lon) => {
+  const x = ((Math.floor((lon + 180) / 360 * landMask.W) % landMask.W) + landMask.W) % landMask.W;
+  const y = clamp(Math.floor((90 - lat) / 180 * landMask.H), 0, landMask.H - 1);
+  return landMask.data[(y * landMask.W + x) * 4 + 3] > 100;
+};
+const dotUniforms = { uSun: { value: sunDir }, uScale: { value: 800 }, uDay: { value: col('#EDE6D2') }, uNight: { value: col('#33458f') }, uCity: { value: hdr('#FFB765', 2.4) }, uTime };
+function buildDots() {
+  const N = coarse ? 22000 : 34000, pos = [], rnd = [];
+  const ga = Math.PI * (3 - Math.sqrt(5)), v = new THREE.Vector3();
+  for (let i = 0; i < N; i++) {
+    const y = 1 - (i + 0.5) / N * 2, r = Math.sqrt(1 - y * y), phi = i * ga;
+    v.set(Math.cos(phi) * r, y, Math.sin(phi) * r);
+    const lat = 90 - Math.acos(v.y) / DEG;
+    let lon = Math.atan2(v.z, -v.x) / DEG - 180; if (lon < -180) lon += 360;
+    if (!isLand(lat, lon)) continue;
+    pos.push(v.x * R * 1.003, v.y * R * 1.003, v.z * R * 1.003); rnd.push(Math.random());
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('aR', new THREE.Float32BufferAttribute(rnd, 1));
+  const mat = new THREE.ShaderMaterial({
+    uniforms: dotUniforms,
+    vertexShader: `attribute float aR; uniform vec3 uSun; uniform float uScale; varying float vDay; varying float vR; varying float vF;
+      void main(){ vec3 n = normalize(position); vDay = dot(n, uSun); vR = aR;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0); vF = normalize(normalMatrix * n).z;
+        float day = smoothstep(-0.2, 0.3, vDay);
+        gl_PointSize = mix(0.05, 0.074, day) * (0.85 + 0.3 * aR) * uScale / -mv.z;
+        gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform vec3 uDay, uNight, uCity; uniform float uTime; varying float vDay; varying float vR; varying float vF;
+      void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard;
+        float day = smoothstep(-0.2, 0.3, vDay);
+        vec3 c = mix(uNight, uDay * 0.78, day);
+        float city = step(0.82, vR) * (1.0 - day);
+        c = mix(c, uCity * (0.75 + 0.25 * sin(uTime * 1.7 + vR * 60.0)), city);
+        c *= 0.25 + 0.75 * smoothstep(-0.05, 0.35, vF);
+        gl_FragColor = vec4(c, 1.0); }`,
+  });
+  globe.add(new THREE.Points(geo, mat));
+}
+
+/* Armillary rings, hub, dome, floor */
+const dial = new THREE.Mesh(new THREE.RingGeometry(R * 1.3, R * 1.37, 360, 1).rotateX(-Math.PI / 2), new THREE.ShaderMaterial({
+  uniforms: { uC: { value: hdr(C.cream, 0.85) }, uO: { value: hdr(C.orange, 1.6) } },
+  vertexShader: `varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform vec3 uC, uO; varying vec3 vP;
+    void main(){ float a = atan(vP.z, vP.x) / 6.2831853 + 0.5; float r = (length(vP.xz) - ${(R * 1.3).toFixed(3)}) / ${(R * 0.07).toFixed(3)};
+      float t = fract(a * 144.0); float tick = step(t, 0.12) * step(0.55, r);
+      float big = step(fract(a * 12.0), 0.004) * step(0.1, r);
+      float edge = step(r, 0.06) + step(0.94, r);
+      float al = clamp(tick * 0.5 + big + edge * 0.6, 0.0, 1.0);
+      if (al < 0.01) discard;
+      gl_FragColor = vec4(mix(uC, uO, big) * al, al); }`,
+  transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+}));
+scene.add(dial);
+const ringMat = new THREE.MeshStandardMaterial({ color: '#E9E2CF', metalness: 0.8, roughness: 0.28, emissive: col(C.cream), emissiveIntensity: 0.12, transparent: true, opacity: 0.45 });
+const meridian = new THREE.Mesh(new THREE.TorusGeometry(R * 1.44, 0.014, 10, 240), ringMat); meridian.rotation.z = 0.28; scene.add(meridian);
+const ecliptic = new THREE.Group(); ecliptic.rotation.set(0.41, 0, 0.2); scene.add(ecliptic);
+ecliptic.add(new THREE.Mesh(new THREE.TorusGeometry(R * 1.58, 0.012, 8, 240), new THREE.MeshBasicMaterial({ color: hdr(C.blueHi, 1.2), transparent: true, opacity: 0.55 })));
+const sats = [];
+for (let i = 0; i < 5; i++) {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: hdr(i % 2 ? C.orange : C.cream, 2.2), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+  s.scale.setScalar(0.35); s.userData.a = i / 5 * Math.PI * 2; ecliptic.add(s); sats.push(s);
+}
+const HUB = new THREE.Vector3(0, R * 1.46, 0);
+const hub = new THREE.Group(); hub.position.copy(HUB); scene.add(hub);
+{
+  const chrome = new THREE.MeshPhysicalMaterial({ color: '#EFE8D6', metalness: 1, roughness: 0.18, clearcoat: 1 });
+  const t1 = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.055, 16, 96), chrome); t1.rotation.x = Math.PI / 2;
+  const t2 = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.03, 12, 80), new THREE.MeshBasicMaterial({ color: hdr(C.red, 2.5) })); t2.rotation.x = Math.PI / 2;
+  const core = new THREE.Sprite(new THREE.SpriteMaterial({ color: new THREE.Color(0.95, 0.95, 0.95), transparent: true, depthWrite: false }));
+  core.scale.setScalar(0.5);
+  if (ASSETS.logo) new THREE.TextureLoader().load(ASSETS.logo, t => { t.colorSpace = THREE.SRGBColorSpace; core.material.map = t; core.material.needsUpdate = true; });
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: hdr(C.blueHi, 2), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true })); glow.scale.setScalar(1.9);
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, R * 0.44, 6).translate(0, -R * 0.23, 0), new THREE.MeshBasicMaterial({ color: hdr(C.blueHi, 2), transparent: true, opacity: 0.5 }));
+  hub.add(t1, t2, core, glow, beam);
+  hub.userData = { t1, t2 };
+}
+{
+  const ico = new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(90, 3));
+  const dome = new THREE.LineSegments(ico, new THREE.LineBasicMaterial({ color: col(C.cream), transparent: true, opacity: 0.045 }));
+  dome.position.y = -10; scene.add(dome);
+  const n = 1600, p = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const u = Math.random() * 2 - 1, th = Math.random() * 6.283, r = Math.sqrt(1 - u * u); p.set([Math.cos(th) * r * 200, u * 200, Math.sin(th) * r * 200], i * 3); }
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(p, 3));
+  scene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: hdr(C.cream, 1.1), size: 1.5, sizeAttenuation: false, transparent: true, opacity: 0.7, depthWrite: false })));
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(60, 96).rotateX(-Math.PI / 2), new THREE.ShaderMaterial({
+    uniforms: { uO: { value: hdr(C.orange, 1.2) }, uB: { value: hdr(C.blueHi, 0.9) }, uTime },
+    vertexShader: `varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `uniform vec3 uO, uB; uniform float uTime; varying vec3 vP;
+      void main(){ float r = length(vP.xz); float a = atan(vP.z, vP.x);
+        float rings = smoothstep(0.035, 0.0, abs(fract(r / 3.0) - 0.5) - 0.465);
+        float spokes = smoothstep(0.02, 0.0, abs(fract(a / 6.2831853 * 24.0) - 0.5) - 0.48) * step(8.0, r);
+        float pulse = smoothstep(1.2, 0.0, abs(r - mod(uTime * 5.0, 60.0)));
+        float fade = exp(-r * 0.05);
+        vec3 c = (uB * rings * 0.35 + uB * spokes * 0.12 + uO * pulse * 0.25) * fade;
+        gl_FragColor = vec4(c + vec3(0.012, 0.02, 0.06) * fade, 1.0); }`,
+  }));
+  floor.position.y = -R * 1.75; scene.add(floor);
+}
+scene.add(new THREE.HemisphereLight(0x7f8fe8, 0xff6d1b, 0.9));
+const key = new THREE.DirectionalLight(0xfdfcf5, 2); key.position.set(6, 12, 10); scene.add(key);
+
+/* =========================================================
+   Particles, beams, shockwaves
+   ========================================================= */
+const PMAX = 1600;
+const pPos = new Float32Array(PMAX * 3), pCol = new Float32Array(PMAX * 3), pSize = new Float32Array(PMAX), pAl = new Float32Array(PMAX);
+const pVel = new Float32Array(PMAX * 3), pLife = new Float32Array(PMAX), pMaxL = new Float32Array(PMAX), pBase = new Float32Array(PMAX);
+let pCur = 0;
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); pGeo.setAttribute('aC', new THREE.BufferAttribute(pCol, 3));
+pGeo.setAttribute('aS', new THREE.BufferAttribute(pSize, 1)); pGeo.setAttribute('aA', new THREE.BufferAttribute(pAl, 1));
+const pMat = new THREE.ShaderMaterial({
+  uniforms: { uScale: { value: 800 } },
+  vertexShader: `attribute vec3 aC; attribute float aS; attribute float aA; uniform float uScale; varying vec3 vC; varying float vA;
+    void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = aS * uScale / max(0.5, -mv.z); gl_Position = projectionMatrix * mv; vC = aC; vA = aA; }`,
+  fragmentShader: `varying vec3 vC; varying float vA; void main(){ float d = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.0, d) * vA; if (a < 0.003) discard; gl_FragColor = vec4(vC * a, a); }`,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+});
+const pts = new THREE.Points(pGeo, pMat); pts.frustumCulled = false; scene.add(pts);
+function burst(p, color, n = 60, spd = 2.2, size = 0.12, life = 1.1, normal = null) {
+  for (let k = 0; k < n; k++) {
+    const i = pCur++ % PMAX;
+    const u = Math.random() * 2 - 1, th = Math.random() * 6.283, r = Math.sqrt(1 - u * u), s = spd * (0.3 + Math.random());
+    let vx = Math.cos(th) * r * s, vy = u * s, vz = Math.sin(th) * r * s;
+    if (normal) { vx += normal.x * spd * 0.9; vy += normal.y * spd * 0.9; vz += normal.z * spd * 0.9; }
+    pPos.set([p.x, p.y, p.z], i * 3); pVel.set([vx, vy, vz], i * 3); pCol.set([color.r, color.g, color.b], i * 3);
+    pLife[i] = pMaxL[i] = life * (0.5 + Math.random() * 0.8); pBase[i] = size * (0.5 + Math.random());
+  }
+}
+function updateParticles(dt) {
+  const drag = Math.exp(-2.2 * dt);
+  for (let i = 0; i < PMAX; i++) {
+    if (pLife[i] > 0) {
+      pLife[i] -= dt; const t = Math.max(0, pLife[i] / pMaxL[i]);
+      for (let k = 0; k < 3; k++) { pPos[i * 3 + k] += pVel[i * 3 + k] * dt; pVel[i * 3 + k] *= drag; }
+      pAl[i] = t; pSize[i] = pBase[i] * (0.4 + t);
+    } else pAl[i] = 0;
+  }
+  pGeo.attributes.position.needsUpdate = pGeo.attributes.aA.needsUpdate = pGeo.attributes.aS.needsUpdate = pGeo.attributes.aC.needsUpdate = true;
+}
+const effects = [];
+const beamGeo = new THREE.CylinderGeometry(0.035, 0.22, 6, 20, 1, true).translate(0, 3, 0);
+const waveGeo = new THREE.RingGeometry(0.9, 1, 64).rotateX(-Math.PI / 2);
+const UP = new THREE.Vector3(0, 1, 0);
+function beam(n, color, strength = 1) {
+  const m = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(2.2 * strength), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  m.position.copy(n).multiplyScalar(R); m.quaternion.setFromUnitVectors(UP, n); scene.add(m);
+  effects.push({ m, t: 0, life: 1.8, kind: 'beam' });
+}
+function wave(n, color, size = 2.2) {
+  const m = new THREE.Mesh(waveGeo, new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(2), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  m.position.copy(n).multiplyScalar(R * 1.004); m.quaternion.setFromUnitVectors(UP, n); scene.add(m);
+  effects.push({ m, t: 0, life: 1.3, kind: 'wave', size });
+}
+function updateEffects(dt) {
+  for (let i = effects.length - 1; i >= 0; i--) {
+    const e = effects[i]; e.t += dt; const k = e.t / e.life;
+    if (e.kind === 'beam') { e.m.scale.set(1 + k * 2, 0.3 + Math.min(1, k * 3), 1 + k * 2); e.m.material.opacity = (1 - k) * (1 - k); }
+    else { const s = 0.15 + k * e.size; e.m.scale.set(s, 1, s); e.m.material.opacity = 1 - k; }
+    if (k >= 1) { scene.remove(e.m); e.m.material.dispose(); effects.splice(i, 1); }
+  }
+}
+
+/* =========================================================
+   Audio: generated music, voice and stings, plus a small synth
+   ========================================================= */
+const audio = (() => {
+  let ctx = null, master, music, sfx, voiceBus, buffers = {}, cur = null, muted = false, lastVoice = 0, voicePlaying = false, lastTick = 0, nb = null;
+  const MUSIC_VOL = 0.55;
+  function b64ToBuf(dataUrl) {
+    const b64 = dataUrl.slice(dataUrl.indexOf(',') + 1), bin = atob(b64), u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return u.buffer;
+  }
+  function init() {
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain(); master.gain.value = muted ? 0 : 0.9; master.connect(ctx.destination);
+    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 3; comp.connect(master);
+    music = ctx.createGain(); music.gain.value = MUSIC_VOL; music.connect(comp);
+    sfx = ctx.createGain(); sfx.gain.value = 0.55; sfx.connect(comp);
+    // Voice bus: a narrow band and a little drive, so the announcer sounds like a 1960s intercom.
+    voiceBus = ctx.createGain(); voiceBus.gain.value = 1.25;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 260;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 4200;
+    const pk = ctx.createBiquadFilter(); pk.type = 'peaking'; pk.frequency.value = 1800; pk.gain.value = 4; pk.Q.value = 0.8;
+    const ws = ctx.createWaveShaper(); const curve = new Float32Array(1024); for (let i = 0; i < 1024; i++) { const x = i / 512 - 1; curve[i] = Math.tanh(x * 1.8) / Math.tanh(1.8); } ws.curve = curve;
+    voiceBus.connect(hp); hp.connect(pk); pk.connect(lp); lp.connect(ws); ws.connect(comp);
+    nb = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    for (const [name, url] of Object.entries(ASSETS)) {
+      if (!/^data:audio/.test(url)) continue;
+      ctx.decodeAudioData(b64ToBuf(url)).then(b => { buffers[name] = b; if (pendingMusic === name) playMusic(name); }).catch(() => {});
+    }
+  }
+  let pendingMusic = null;
+  function playMusic(name, fade = 2.5) {
+    if (!ctx) { pendingMusic = name; return; }
+    const b = buffers[name]; if (!b) { pendingMusic = name; return; }
+    pendingMusic = null;
+    if (cur && cur.name === name) return;
+    const t = ctx.currentTime;
+    if (cur) { const old = cur; old.g.gain.cancelScheduledValues(t); old.g.gain.setValueAtTime(old.g.gain.value, t); old.g.gain.linearRampToValueAtTime(0, t + fade); setTimeout(() => { try { old.src.stop(); } catch (e) {} }, fade * 1000 + 200); clearTimeout(old.loopTimer); }
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + fade); g.connect(music);
+    const entry = { name, g, src: null, loopTimer: 0 };
+    const start = () => {
+      const src = ctx.createBufferSource(); src.buffer = b; src.connect(g); src.start(); entry.src = src;
+      // Crossfade into a fresh copy before the track ends, so the loop has no seam.
+      const x = Math.min(6, b.duration * 0.2);
+      entry.loopTimer = setTimeout(() => {
+        if (cur !== entry) return;
+        const g2 = ctx.createGain(); const now = ctx.currentTime; g2.gain.setValueAtTime(0, now); g2.gain.linearRampToValueAtTime(1, now + x); g2.connect(music);
+        g.gain.setValueAtTime(g.gain.value, now); g.gain.linearRampToValueAtTime(0, now + x);
+        const oldSrc = src; setTimeout(() => { try { oldSrc.stop(); } catch (e) {} }, x * 1000 + 100);
+        entry.g = g2; cur = entry; restartWith(g2);
+      }, Math.max(1, b.duration - x - 0.5) * 1000);
+    };
+    const restartWith = g2 => {
+      const src = ctx.createBufferSource(); src.buffer = b; src.connect(g2); src.start(); entry.src = src;
+      const x = Math.min(6, b.duration * 0.2);
+      entry.loopTimer = setTimeout(() => {
+        if (cur !== entry) return;
+        const g3 = ctx.createGain(); const now = ctx.currentTime; g3.gain.setValueAtTime(0, now); g3.gain.linearRampToValueAtTime(1, now + x); g3.connect(music);
+        g2.gain.setValueAtTime(g2.gain.value, now); g2.gain.linearRampToValueAtTime(0, now + x);
+        const oldSrc = src; setTimeout(() => { try { oldSrc.stop(); } catch (e) {} }, x * 1000 + 100);
+        entry.g = g3; restartWith(g3);
+      }, Math.max(1, b.duration - x - 0.5) * 1000);
+    };
+    cur = entry; start();
+  }
+  function play(name, vol = 1, dest = sfx) {
+    const b = ctx && buffers[name]; if (!b) return 0;
+    const s = ctx.createBufferSource(); s.buffer = b; const g = ctx.createGain(); g.gain.value = vol; s.connect(g); g.connect(dest); s.start();
+    return b.duration;
+  }
+  function duck(dur) {
+    const t = ctx.currentTime; music.gain.cancelScheduledValues(t); music.gain.setTargetAtTime(MUSIC_VOL * 0.4, t, 0.08); music.gain.setTargetAtTime(MUSIC_VOL, t + dur, 0.5);
+  }
+  function tone(f1, f2, dur, type = 'sine', vol = 0.2, delay = 0) {
+    if (!ctx) return; const t = ctx.currentTime + delay;
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type;
+    o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(sfx); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function noise(dur, vol, f1, f2, type = 'bandpass') {
+    if (!ctx) return; const t = ctx.currentTime;
+    const s = ctx.createBufferSource(); s.buffer = nb; const f = ctx.createBiquadFilter(); f.type = type;
+    f.frequency.setValueAtTime(f1, t); f.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    const g = ctx.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(sfx); s.start(t); s.stop(t + dur + 0.02);
+  }
+  return {
+    start() { init(); ctx.resume(); },
+    get ready() { return !!ctx; },
+    get muted() { return muted; },
+    setMuted(m) { muted = m; if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); },
+    music: playMusic,
+    voice(name, force = false) {
+      if (!ctx || !buffers[name]) return;
+      const now = performance.now();
+      if (!force && (voicePlaying || now - lastVoice < 2500)) return;
+      const d = play(name, 1, voiceBus); if (!d) return;
+      voicePlaying = true; lastVoice = now; duck(d + 0.2); setTimeout(() => { voicePlaying = false; }, d * 1000);
+    },
+    sting(name, vol = 0.9) { if (ctx) play(name, vol); },
+    ping() { tone(1320, 1320, 0.25, 'sine', 0.12); tone(1980, 1980, 0.35, 'sine', 0.06, 0.12); },
+    click() { tone(900, 600, 0.05, 'square', 0.04); },
+    launch() { noise(0.7, 0.12, 300, 3000); tone(220, 660, 0.5, 'triangle', 0.08); },
+    stage() { tone(880, 880, 0.08, 'sine', 0.07); tone(1175, 1175, 0.12, 'sine', 0.06, 0.07); },
+    call() { tone(660, 660, 0.12, 'square', 0.05); tone(660, 660, 0.12, 'square', 0.05, 0.18); },
+    good() { tone(523, 523, 0.1, 'triangle', 0.14); tone(784, 784, 0.22, 'triangle', 0.13, 0.08); },
+    bad() { tone(180, 90, 0.5, 'sawtooth', 0.12); noise(0.4, 0.14, 800, 120, 'lowpass'); },
+    tick() { if (!ctx || ctx.currentTime - lastTick < 0.05) return; lastTick = ctx.currentTime; noise(0.016, 0.035, 5200, 3800, 'highpass'); },
+  };
+})();
+
+/* =========================================================
+   Game state
+   ========================================================= */
+let state = 'title', paused = false, modalOpen = false;
+let gt = 0, realT = 0;
+const game = {};
+const stories = [];
+const agents = [];
+let selected = null, sid = 0, deck = [];
+function resetGame() {
+  Object.assign(game, { readers: 0, hours: 0, scoops: 0, trust: 5, published: 0, spawned: 0, corrections: 0, late: 0, cold: 0, upIdx: 0, nextSpawn: 1.2, caps: new Set(), seats: 0, publishedList: [], tips: new Set() });
+  deck = shuffle(STORIES.slice());
+  for (const s of stories) removeStory(s, true);
+  stories.length = 0;
+  for (const a of agents) { scene.remove(a.sprite); scene.remove(a.trail.line); }
+  agents.length = 0;
+  for (let i = 0; i < 3; i++) addAgent();
+  for (const m of markers) scene.remove(m); markers.length = 0;
+  selected = null; gt = 0;
+}
+
+/* ---------- agents ---------- */
+const agentMat = () => new THREE.SpriteMaterial({ map: glowTex, color: hdr(C.blueHi, 3.2), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
+function makeTrail() {
+  const N = 26, pos = new Float32Array(N * 3), al = new Float32Array(N);
+  for (let i = 0; i < N; i++) al[i] = Math.pow(1 - i / (N - 1), 1.5);
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('aA', new THREE.BufferAttribute(al, 1));
+  const line = new THREE.Line(geo, new THREE.ShaderMaterial({
+    uniforms: { uC: { value: hdr(C.blueHi, 2.4) } },
+    vertexShader: `attribute float aA; varying float vA; void main(){ vA = aA; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `uniform vec3 uC; varying float vA; void main(){ gl_FragColor = vec4(uC * vA, vA); }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  }));
+  line.frustumCulled = false; scene.add(line);
+  return { N, pos, geo, line, init: false };
+}
+function addAgent() {
+  const sprite = new THREE.Sprite(agentMat()); sprite.scale.setScalar(0.5); scene.add(sprite);
+  const a = { id: agents.length, state: 'idle', story: null, t: 0, dur: 1, p0: new THREE.Vector3(), p1: new THREE.Vector3(), p2: new THREE.Vector3(), pos: HUB.clone(), sprite, trail: makeTrail() };
+  agents.push(a); renderBay(); return a;
+}
+const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
+function bez(a, t, out) { const u = 1 - t; return out.set(0, 0, 0).addScaledVector(a.p0, u * u).addScaledVector(a.p1, 2 * u * t).addScaledVector(a.p2, t * t); }
+function sendAgent(a, target, dur) {
+  a.p0.copy(a.pos); a.p2.copy(target);
+  a.p1.copy(a.p0).add(a.p2).multiplyScalar(0.5);
+  const lift = Math.max(R * 1.55, a.p1.length() + 1.2); a.p1.setLength(lift);
+  a.t = 0; a.dur = dur;
+}
+function idleSlot(a, out) {
+  const idle = agents.filter(x => x.state === 'idle'), i = Math.max(0, idle.indexOf(a)), n = Math.max(1, idle.length);
+  const ang = i / n * Math.PI * 2 + realT * 0.7;
+  return out.set(HUB.x + Math.cos(ang) * 0.95, HUB.y + Math.sin(realT * 1.3 + i) * 0.08, HUB.z + Math.sin(ang) * 0.95);
+}
+function updateAgents(dt, running) {
+  for (const a of agents) {
+    if (a.state === 'idle') { idleSlot(a, tmp); a.pos.lerp(tmp, 1 - Math.exp(-dt * 6)); }
+    else if (a.state === 'out' || a.state === 'back') {
+      if (running) a.t += dt / a.dur;
+      const k = clamp(a.t, 0, 1), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      bez(a, e, a.pos);
+      if (a.t >= 1) {
+        if (a.state === 'out') { a.state = 'work'; arrive(a.story); }
+        else { a.state = 'idle'; a.story = null; renderBay(); }
+      }
+    } else if (a.state === 'work' && a.story) {
+      const n = a.story.n; tmp.copy(n).multiplyScalar(R * 1.1);
+      tmp2.crossVectors(n, UP).normalize(); if (tmp2.lengthSq() < 0.01) tmp2.set(1, 0, 0);
+      const t3 = tmp2.clone().cross(n).normalize(), ang = realT * 3 + a.id;
+      tmp.addScaledVector(tmp2, Math.cos(ang) * 0.28).addScaledVector(t3, Math.sin(ang) * 0.28);
+      a.pos.lerp(tmp, 1 - Math.exp(-dt * 8));
+    }
+    a.sprite.position.copy(a.pos);
+    a.sprite.scale.setScalar(a.state === 'idle' ? 0.34 : 0.55 + Math.sin(realT * 8 + a.id) * 0.05);
+    const tr = a.trail;
+    if (!tr.init) { for (let i = 0; i < tr.N; i++) tr.pos.set([a.pos.x, a.pos.y, a.pos.z], i * 3); tr.init = true; }
+    tr.pos.copyWithin(3, 0, (tr.N - 1) * 3); tr.pos.set([a.pos.x, a.pos.y, a.pos.z], 0);
+    tr.geo.attributes.position.needsUpdate = true;
+  }
+}
+
+/* ---------- stories ---------- */
+const labelsEl = $('#labels');
+const hitMeshes = [];
+const markers = [];
+const hitGeo = new THREE.SphereGeometry(0.42, 10, 8);
+const hitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false });
+const spikeGeo = new THREE.CylinderGeometry(0.016, 0.016, 1, 6).translate(0, 0.5, 0);
+const ringGeo = new THREE.RingGeometry(0.13, 0.17, 48).rotateX(-Math.PI / 2);
+const STATE_COL = { new: C.cream, breaking: C.gold, travel: C.blueHi, work: C.blueHi, call: C.orange, done: C.red };
+function spawnStory() {
+  if (!deck.length) deck = shuffle(STORIES.slice());
+  let d = deck.pop();
+  const active = new Set(stories.filter(s => s.state !== 'done').map(s => s.d.city));
+  for (let k = 0; k < deck.length && active.has(d.city); k++) { deck.unshift(d); d = deck.pop(); }
+  const breaking = gt > 45 && Math.random() < 0.16;
+  const n = ll2v(d.lat, d.lon, 1).normalize();
+  const order = Math.random() < 0.5 ? [0, 1] : [1, 0];
+  const s = {
+    id: ++sid, d, n, state: 'new', stage: 0, prog: [0, 0, 0, 0], spawnT: gt, deadline: gt + (breaking ? rand(30, 36) : rand(46, 64)), breaking,
+    reach: d.reach * (breaking ? 2.2 : 1), agent: null, rival: false, workT: 0, order, correctIdx: order.indexOf(0), callT: 0, flavor: '', doneT: 0, correction: false,
+  };
+  const g = new THREE.Group(); g.position.copy(n).multiplyScalar(R); g.quaternion.setFromUnitVectors(UP, n);
+  const spikeMat = new THREE.MeshBasicMaterial({ color: hdr(breaking ? C.gold : C.cream, 2.2), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+  const spike = new THREE.Mesh(spikeGeo, spikeMat); spike.scale.y = breaking ? 1.05 : 0.7;
+  const ringMatS = new THREE.MeshBasicMaterial({ color: hdr(breaking ? C.gold : C.cream, 2), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  const ring = new THREE.Mesh(ringGeo, ringMatS); ring.position.y = 0.02;
+  const ring2 = new THREE.Mesh(ringGeo, ringMatS.clone()); ring2.position.y = 0.02;
+  const head = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: hdr(breaking ? C.gold : C.cream, 2.4), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+  head.scale.setScalar(0.32); head.position.y = spike.scale.y;
+  const hit = new THREE.Mesh(hitGeo, hitMat); hit.position.y = 0.35; hit.userData.story = s;
+  g.add(spike, ring, ring2, head, hit); scene.add(g); hitMeshes.push(hit);
+  s.obj = { g, spike, spikeMat, ring, ring2, ringMat: ringMatS, head, hit };
+  s.top = n.clone().multiplyScalar(R + spike.scale.y + 0.12);
+  const el = document.createElement('div'); el.className = 'bl' + (breaking ? ' breaking' : '');
+  el.innerHTML = `<b>${esc(d.city)}${breaking ? ', breaking' : ''}</b>${esc(d.tag)}<span class="bar"><i></i></span>`;
+  el.addEventListener('click', e => { e.stopPropagation(); clickStory(s); });
+  labelsEl.appendChild(el); s.label = el; s.labelBar = el.querySelector('i');
+  stories.push(s); game.spawned++;
+  wave(n, col(breaking ? C.gold : C.cream), 1.6);
+  audio.ping();
+  if (breaking) { audio.sting('sting_breaking', 0.8); audio.voice('v_breaking'); }
+  ticker(`${d.city}: ${d.head}.`);
+  if (!game.tips.has('first')) { game.tips.add('first'); coach(`A story broke in ${d.city}. Select it, then assign an agent.`, 9); select(s, true); }
+  else if (!selected || selected.state === 'done') select(s, false);
+  buildQueue();
+}
+function removeStory(s, instant = false) {
+  if (s.obj) { scene.remove(s.obj.g); const i = hitMeshes.indexOf(s.obj.hit); if (i >= 0) hitMeshes.splice(i, 1); }
+  s.label?.remove();
+  s.removed = true;
+  if (!instant) { const i = stories.indexOf(s); if (i >= 0) stories.splice(i, 1); }
+  if (selected === s) selected = null;
+}
+function stageRate(i) {
+  const c = game.caps; let r = c.has('routing') ? 1.3 : 1;
+  if (i === 0) r *= (c.has('transcribe') ? 1.8 : 1) * (c.has('documents') ? 1.5 : 1);
+  if (i === 1 && c.has('style')) r *= 2;
+  if (i === 2 && c.has('factcheck')) r *= 1.6;
+  if (i === 3 && c.has('packages')) r *= 2;
+  return r;
+}
+const freeAgent = () => agents.find(a => a.state === 'idle');
+function assign(s) {
+  if (!s || s.state !== 'new' || state !== 'playing') return;
+  const a = freeAgent();
+  if (!a) { coach('Every agent is busy. The next one returns when its story publishes, or install more agents.', 5); audio.bad(); return; }
+  a.state = 'out'; a.story = s; s.agent = a; s.state = 'travel';
+  tmp.copy(s.n).multiplyScalar(R * 1.1);
+  sendAgent(a, tmp, 1.3 + a.pos.distanceTo(tmp) * 0.06);
+  if (game.caps.has('memory')) {
+    const near = game.publishedList.find(p => p.n.angleTo(s.n) * 6371 < 3200);
+    if (near) { s.prog[0] = 0.5; s.memory = near.d.city; }
+  }
+  audio.launch(); renderBay(); buildQueue(); renderCard(true);
+  if (!game.tips.has('assign')) { game.tips.add('assign'); coach('Your agent is on its way. Symbolic researches, writes and checks the story while you pick the next one.', 7); }
+}
+function arrive(s) {
+  s.state = 'work'; s.flavor = pick(FLAVOR[s.stage]); wave(s.n, col(C.blueHi), 1.4);
+  if (s.memory) ticker(`Institutional memory: your ${s.memory} coverage gave ${s.d.city} a head start.`);
+  renderCard(true); buildQueue();
+}
+function decide(s, idx, auto = false) {
+  if (!s || s.state !== 'call') return;
+  const right = idx === s.correctIdx;
+  s.state = 'work'; s.stage = 3; s.flavor = pick(FLAVOR[3]); s.choice = idx;
+  if (right) {
+    audio.good(); floaterAt(s.top, auto ? 'Symbolic made the call' : 'Right call', 'good');
+    if (!auto && !game.tips.has('call-ok')) { game.tips.add('call-ok'); coach('Right call. The story moves on to publishing.', 4); }
+  } else {
+    s.correction = true; game.corrections++; game.trust--; audio.bad(); audio.voice('v_correction', true);
+    fxRed = 1; floaterAt(s.top, 'Correction', 'bad');
+    ticker(`Correction: "${s.order[idx] === 0 ? s.d.ok : s.d.no}" was wrong. ${s.d.ev}`);
+    renderTrust();
+    if (game.trust <= 0) { endShift('trust'); return; }
+  }
+  renderCard(true); buildQueue();
+}
+function publish(s) {
+  s.state = 'done'; s.doneT = gt;
+  const scoop = gt <= s.deadline;
+  const mult = (scoop ? 1.5 : 0.6) * (game.caps.has('packages') ? 1.5 : 1) * (s.correction ? 0.5 : 1);
+  const readers = Math.round(s.reach * mult);
+  const saved = MANUAL_HOURS.reduce((a, b) => a + b, 0) + rand(0, 1.8) - s.workT / HOUR;
+  game.readers += readers; game.hours += saved; game.published++;
+  if (scoop) game.scoops++; else game.late++;
+  s.result = { readers, scoop, saved, at: clockText(gt) };
+  game.publishedList.push(s);
+  beam(s.n, col(scoop ? C.cream : C.red)); wave(s.n, col(scoop ? C.orange : C.red), 3);
+  burst(s.top, hdr(scoop ? C.orange : C.red, 3), 90, 2.4, 0.13, 1.2, s.n);
+  floaterAt(s.top, `+${fmtN(readers)} readers`, scoop ? 'gold' : 'good');
+  setTimeout(() => floaterAt(s.top, `+${saved.toFixed(1)} h saved`, 'good'), 450);
+  audio.sting('sting_publish', 0.75);
+  if (scoop) { audio.voice('v_scoop'); ticker(`Published at ${s.result.at}, ahead of The Daily Rumor: ${s.d.head}.`); }
+  else { audio.voice('v_published'); ticker(`Published at ${s.result.at}: ${s.d.head}.`); }
+  if (scoop && !game.tips.has('scoop')) { game.tips.add('scoop'); coach('Published before The Daily Rumor. A scoop reaches 1.5 times more readers.', 6); }
+  const a = s.agent; if (a) { a.state = 'back'; sendAgent(a, HUB, 1.4); }
+  // Leave a small red marker: by dawn the globe shows everywhere the desk reported from.
+  const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: hdr(C.red, 2.6), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+  m.position.copy(s.n).multiplyScalar(R * 1.012); m.scale.setScalar(0.22); scene.add(m); markers.push(m);
+  s.obj.g.visible = false;
+  renderBay(); renderCard(true); buildQueue();
+}
+function updateStories(dt) {
+  for (const s of stories.slice()) {
+    if (s.state === 'new' && gt - s.spawnT > 78) {
+      game.cold++; ticker(`${s.d.city} went cold. Nobody covered it.`); removeStory(s); buildQueue(); if (!selected) renderCard(true); continue;
+    }
+    if (!s.rival && s.state !== 'done' && gt >= s.deadline) {
+      s.rival = true; audio.sting('sting_rival', 0.55); audio.voice('v_rival');
+      ticker(`The Daily Rumor ran the ${s.d.city} story first.`); wave(s.n, col(C.red), 1.4); s.label.classList.add('late');
+    }
+    if (s.state === 'work') {
+      s.workT += dt;
+      if (s.prog[s.stage] < 1) s.prog[s.stage] = Math.min(1, s.prog[s.stage] + dt / BASE[s.stage] * stageRate(s.stage));
+      if (s.prog[s.stage] >= 1) {
+        if (s.stage === 2) { s.state = 'call'; s.callT = gt; audio.call(); audio.voice('v_call'); wave(s.n, col(C.orange), 1.6);
+          if (!game.tips.has('call')) { game.tips.add('call'); coach('Your call. Read what Symbolic found, then choose the version the sources support.', 9); select(s, true); }
+          else if (!selected || selected.state !== 'call') select(s, false);
+        } else if (s.stage === 3) { publish(s); continue; }
+        else { s.stage++; s.flavor = pick(FLAVOR[s.stage]); audio.stage(); wave(s.n, col(C.blueHi), 1.2); }
+        renderCard(true); buildQueue();
+      }
+    } else if (s.state === 'call') {
+      s.workT += dt;
+      if (game.caps.has('factcheck') && gt - s.callT >= 3) decide(s, s.correctIdx, true);
+    } else if (s.state === 'done' && gt - s.doneT > 6) { removeStory(s); buildQueue(); if (!selected) renderCard(true); }
+  }
+}
+
+/* ---------- selection and camera focus ---------- */
+let focus = null;
+function select(s, doFocus = true) {
+  selected = s; renderCard(true); buildQueue();
+  if (s && doFocus) {
+    const from = camera.position.clone().sub(controls.target), dist = from.length();
+    const to = s.n.clone().add(new THREE.Vector3(0, 0.28, 0)).normalize().multiplyScalar(dist);
+    focus = { from: from.normalize(), to: to.clone().normalize(), dist, t: 0 };
+  }
+  lastInput = realT;
+}
+function clickStory(s) {
+  audio.start(); audio.click();
+  if (selected === s && s.state === 'new') assign(s); else select(s, true);
+}
+
+/* =========================================================
+   HUD
+   ========================================================= */
+const cardEl = $('#card'), queueEl = $('#queue');
+let cardKey = '';
+function renderCard(force = false) {
+  const s = selected && !selected.removed ? selected : null;
+  const key = s ? `${s.id}:${s.state}:${s.stage}:${game.caps.has('factcheck')}:${freeAgent() ? 1 : 0}` : 'none';
+  if (!force && key === cardKey) return;
+  if (key === cardKey && !force) return;
+  cardKey = key;
+  if (!s) { cardEl.innerHTML = `<p class="empty">Select a story on the globe or in the list.</p>`; return; }
+  const d = s.d;
+  const pipe = `<ol class="pipe">${STAGE_NAMES.map((n, i) => `<li class="${s.state === 'done' || i < s.stage ? 'done' : i === s.stage && s.state !== 'new' ? 'now' : ''}"><span>${n}</span><i><b data-p="${i}"></b></i></li>`).join('')}</ol>`;
+  let body = '';
+  if (s.state === 'new') {
+    const free = freeAgent();
+    body = `<p class="status" data-status></p><div class="actions"><button class="btn" data-act="assign" ${free ? '' : 'disabled'}>${free ? 'Assign an agent' : 'No agent free'}</button><kbd>Enter</kbd></div>`;
+  } else if (s.state === 'call') {
+    const opts = s.order.map(o => o === 0 ? d.ok : d.no);
+    const rec = game.caps.has('factcheck');
+    body = `<div class="evidence"><small>Symbolic found</small><p>${esc(d.ev)}</p></div>
+      <div class="opts">${opts.map((t, i) => `<button class="opt ${rec && i === s.correctIdx ? 'rec' : ''}" data-opt="${i}"><kbd>${'AB'[i]}</kbd><span>${esc(t)}${rec && i === s.correctIdx ? '<span class="tag">Symbolic recommends this version</span>' : ''}</span></button>`).join('')}</div>
+      ${rec ? '<div class="autobar"><i data-auto></i></div>' : ''}`;
+  } else {
+    body = `<p class="status" data-status></p>`;
+  }
+  cardEl.innerHTML = `<div class="meta"><span>${esc(d.city)}</span><span>${esc(d.beat)}</span>${s.breaking ? '<span class="brk">Breaking</span>' : ''}</div><h2>${esc(d.head)}</h2>${pipe}${body}`;
+  cardEl.querySelector('[data-act="assign"]')?.addEventListener('click', () => { audio.start(); assign(s); });
+  cardEl.querySelectorAll('[data-opt]').forEach(b => b.addEventListener('click', () => decide(s, +b.dataset.opt)));
+  updateCard();
+}
+function updateCard() {
+  const s = selected && !selected.removed ? selected : null; if (!s) return;
+  cardEl.querySelectorAll('[data-p]').forEach(b => { const i = +b.dataset.p; b.style.width = `${(s.state === 'done' ? 1 : s.prog[i]) * 100}%`; });
+  const st = cardEl.querySelector('[data-status]');
+  const left = Math.ceil(s.deadline - gt);
+  const rivalTxt = s.rival ? '<span class="warn">The Daily Rumor already ran it. You can still publish, to fewer readers.</span>' : `<span class="dim">The Daily Rumor publishes in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}.</span>`;
+  let html = '';
+  if (s.state === 'new') html = `Reach about ${fmtN(s.reach)} readers. ${rivalTxt}`;
+  else if (s.state === 'travel') html = `<span class="dim">An agent is on its way to ${esc(s.d.city)}.</span>`;
+  else if (s.state === 'work') {
+    let eta = 0; for (let i = s.stage; i < 4; i++) eta += (1 - s.prog[i]) * BASE[i] / stageRate(i);
+    if (s.stage <= 2) eta += 1.5;
+    const ahead = gt + eta <= s.deadline;
+    html = `${esc(s.flavor)}. <span class="${s.rival ? 'dim' : ahead ? 'good' : 'warn'}">Done in about ${Math.ceil(eta)} s${s.rival ? '.' : ahead ? ', ahead of The Daily Rumor.' : ', after The Daily Rumor.'}</span>`;
+  } else if (s.state === 'done') {
+    const r = s.result;
+    html = `<span class="${r.scoop ? 'good' : 'dim'}">Published at ${r.at}${r.scoop ? ', a scoop' : ''}. ${fmtN(r.readers)} readers, ${r.saved.toFixed(1)} hours saved.${s.correction ? ' It ran with a correction.' : ''}</span>`;
+  }
+  if (st && st.innerHTML !== html) st.innerHTML = html;
+  const ab = cardEl.querySelector('[data-auto]'); if (ab && s.state === 'call') ab.style.width = `${clamp((gt - s.callT) / 3, 0, 1) * 100}%`;
+}
+function stageLabel(s) {
+  if (s.state === 'new') return 'Waiting for an agent';
+  if (s.state === 'travel') return 'Agent on the way';
+  if (s.state === 'call') return 'Your call';
+  if (s.state === 'done') return s.result.scoop ? 'Published, scoop' : 'Published';
+  return `${STAGE_NAMES[s.stage]} ${Math.round(s.prog[s.stage] * 100)}%`;
+}
+function buildQueue() {
+  const list = stories.filter(s => !s.removed);
+  $('#qcount').textContent = list.length ? `${list.filter(s => s.state !== 'done').length} open` : 'none yet';
+  queueEl.innerHTML = list.length ? '' : '<li class="empty">Stories appear here as they break.</li>';
+  list.slice(0, 9).forEach((s, i) => {
+    const li = document.createElement('li');
+    li.className = [s.state === 'call' ? 'call' : '', s.breaking ? 'breaking' : '', s.state === 'done' ? 'done' : '', s === selected ? 'sel' : '', s.rival ? 'late' : ''].join(' ');
+    li.innerHTML = `<button><span class="k">${i + 1}</span><span class="h">${esc(s.d.tag)}</span><span class="c">${esc(s.d.city)}</span><span class="s"><span data-q="${s.id}">${stageLabel(s)}</span><em data-dl="${s.id}"></em></span></button>`;
+    li.querySelector('button').addEventListener('click', () => { audio.start(); audio.click(); select(s, true); });
+    queueEl.appendChild(li);
+  });
+  updateQueue();
+}
+function updateQueue() {
+  for (const s of stories) {
+    const q = queueEl.querySelector(`[data-q="${s.id}"]`); if (q) { const t = stageLabel(s); if (q.textContent !== t) q.textContent = t; }
+    const dl = queueEl.querySelector(`[data-dl="${s.id}"]`);
+    if (dl) { const t = s.state === 'done' ? '' : s.rival ? 'late' : `${Math.max(0, Math.ceil(s.deadline - gt))} s`; if (dl.textContent !== t) dl.textContent = t; }
+  }
+}
+function renderBay() {
+  const busy = agents.filter(a => a.state !== 'idle').length;
+  $('#agentCount').textContent = `${agents.length - busy} of ${agents.length} free`;
+  $('#agents').innerHTML = agents.map(a => `<i class="${a.state !== 'idle' ? 'busy' : ''}"></i>`).join('');
+  const caps = [...game.caps].map(id => CAPS.find(c => c.id === id).name);
+  if (game.seats) caps.push(`${game.seats * 2} extra agents`);
+  $('#capCount').textContent = caps.length ? `${caps.length} installed` : '';
+  $('#caps').innerHTML = caps.length ? caps.map(c => `<li>${esc(c)}</li>`).join('') : '<li class="none">None installed yet</li>';
+}
+function renderTrust() { document.querySelectorAll('#trust b').forEach((b, i) => b.classList.toggle('lost', i >= game.trust)); }
+let coachTimer = 0;
+function coach(text, secs = 6) { $('#coachText').textContent = text; $('#coach').classList.add('on'); coachTimer = secs; }
+const tickQ = []; let tickCur = null;
+function ticker(text) { tickQ.push({ t: clockText(gt), text }); if (tickQ.length > 4) tickQ.shift(); }
+function updateTicker(dt) {
+  if (!tickCur && tickQ.length) { tickCur = { ...tickQ.shift(), n: 0, acc: 0, hold: 0 }; $('#tickT').textContent = tickCur.t; }
+  if (!tickCur) return;
+  if (tickCur.n < tickCur.text.length) {
+    tickCur.acc += dt * (tickQ.length ? 110 : 60); const n = Math.min(tickCur.text.length, Math.floor(tickCur.acc));
+    if (n > tickCur.n) { tickCur.n = n; $('#tickX').textContent = tickCur.text.slice(0, n); audio.tick(); }
+  } else { tickCur.hold += dt; if (tickCur.hold > (tickQ.length ? 0.8 : 3)) tickCur = null; }
+}
+const projV = new THREE.Vector3();
+function floaterAt(p, text, kind = 'good') {
+  if (reduceMotion) return;
+  projV.copy(p).project(camera); if (projV.z > 1) return;
+  const d = document.createElement('div'); d.className = `floater ${kind}`; d.textContent = text;
+  d.style.left = `${(projV.x * 0.5 + 0.5) * innerWidth}px`; d.style.top = `${(-projV.y * 0.5 + 0.5) * innerHeight}px`;
+  $('#floaters').appendChild(d); setTimeout(() => d.remove(), 1900);
+}
+const hubLabel = document.createElement('div'); hubLabel.className = 'bl hub'; hubLabel.innerHTML = '<b>Symbolic</b><span id="hubTxt"></span>'; labelsEl.appendChild(hubLabel);
+const camDir = new THREE.Vector3();
+function updateLabels() {
+  camDir.copy(camera.position).normalize();
+  const w = innerWidth, h = innerHeight;
+  for (const s of stories) {
+    if (s.removed || s.state === 'done') { s.label.classList.add('off'); continue; }
+    const facing = s.n.dot(camDir);
+    projV.copy(s.top).project(camera);
+    const x = (projV.x * 0.5 + 0.5) * w, y = (-projV.y * 0.5 + 0.5) * h;
+    s.label.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-115%)`;
+    s.label.classList.toggle('off', facing < 0.12 || state !== 'playing');
+    s.label.classList.toggle('sel', s === selected);
+    s.label.classList.toggle('call', s.state === 'call');
+    s.label.classList.toggle('work', s.state === 'work' || s.state === 'travel');
+    const k = s.state === 'new' ? clamp((s.deadline - gt) / (s.deadline - s.spawnT), 0, 1) : s.state === 'work' ? (s.stage + s.prog[s.stage]) / 4 : s.state === 'call' ? 0.75 : 1;
+    s.labelBar.style.transform = `scaleX(${k.toFixed(3)})`;
+  }
+  projV.copy(HUB).add(new THREE.Vector3(0, 0.75, 0)).project(camera);
+  hubLabel.style.transform = `translate(${((projV.x * 0.5 + 0.5) * w).toFixed(1)}px,${((-projV.y * 0.5 + 0.5) * h).toFixed(1)}px) translate(-50%,-100%)`;
+  hubLabel.classList.toggle('off', state !== 'playing');
+  const free = agents.filter(a => a.state === 'idle').length;
+  const ht = $('#hubTxt'), t = `${free} agent${free === 1 ? '' : 's'} ready`; if (ht.textContent !== t) ht.textContent = t;
+}
+function updateBeacons() {
+  for (const s of stories) {
+    if (s.removed || !s.obj) continue;
+    const o = s.obj, colr = s.state === 'new' ? (s.breaking ? C.gold : C.cream) : STATE_COL[s.state] || C.cream;
+    const k = s.state === 'call' ? (Math.sin(realT * 10) > 0 ? 3 : 1.2) : 2.2;
+    o.spikeMat.color.copy(hdr(colr, k)); o.head.material.color.copy(hdr(colr, k * 1.1)); o.ringMat.color.copy(hdr(colr, 2));
+    const p = (realT * 0.9 + s.id * 0.37) % 1, p2 = (p + 0.5) % 1;
+    o.ring.scale.setScalar(1 + p * 3.2); o.ring.material.opacity = 1 - p;
+    o.ring2.scale.setScalar(1 + p2 * 3.2); o.ring2.material.opacity = 1 - p2;
+    const sel = s === selected ? 1.4 : 1;
+    o.head.scale.setScalar(0.3 * sel + Math.sin(realT * 4 + s.id) * 0.03);
+  }
+}
+
+/* ---------- capability modal ---------- */
+function openUpgrade() {
+  const owned = game.caps;
+  const pool = shuffle(CAPS.filter(c => c.repeat || !owned.has(c.id)));
+  let choices = pool.slice(0, 3);
+  if (choices.length === 0) { game.upIdx = 99; return; }
+  modalOpen = true;
+  const grid = $('#capgrid'); grid.innerHTML = '';
+  choices.forEach((c, i) => {
+    const b = document.createElement('button'); b.className = 'capcard';
+    const art = ASSETS[`cap_${c.id}`];
+    b.innerHTML = `<div class="art" style="${art ? `background-image:url(${art})` : ''}"></div><div class="txt"><b>${esc(c.name)}<kbd>${i + 1}</kbd></b><span class="eff">${esc(c.eff)}</span><span class="copy">${esc(c.copy)}</span></div>`;
+    b.addEventListener('click', () => chooseCap(c));
+    grid.appendChild(b);
+  });
+  modalChoices = choices;
+  showScreen('modal'); grid.querySelector('button')?.focus();
+  audio.sting('sting_upgrade', 0.8); audio.voice('v_capability', true);
+}
+let modalChoices = [];
+function chooseCap(c) {
+  if (!modalOpen) return;
+  modalOpen = false; showScreen(null);
+  if (c.id === 'seats') { game.seats++; addAgent(); addAgent(); }
+  else game.caps.add(c.id);
+  game.upIdx++; audio.good(); renderBay(); renderCard(true);
+  ticker(`${c.name} is live on the desk. ${c.eff}`);
+  for (const s of stories) if (s.state === 'call' && c.id === 'factcheck') s.callT = gt;
+  canvas.focus();
+}
+
+/* =========================================================
+   Flow
+   ========================================================= */
+function showScreen(id) { for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); document.body.dataset.state = state; }
+let fxRed = 0, fxDawn = 0;
+function startShift() {
+  audio.start();
+  resetGame(); renderTrust(); renderBay(); buildQueue(); renderCard(true);
+  state = 'playing'; paused = false; modalOpen = false;
+  showScreen(null); $('#end').classList.remove('show');
+  $('#hud').classList.add('on');
+  controls.autoRotate = false;
+  audio.music('music_shift'); audio.voice('v_start', true);
+  ticker('Night shift is live. Stories will break around the world until dawn.');
+  canvas.focus();
+}
+function setPaused(p) {
+  if (state !== 'playing' || modalOpen) return;
+  paused = p; showScreen(p ? 'pause' : null);
+  if (p) $('#resumeBtn').focus(); else canvas.focus();
+}
+function endShift(reason = 'dawn') {
+  if (state !== 'playing') return;
+  state = 'end'; modalOpen = false; paused = false;
+  $('#hud').classList.remove('on');
+  if (reason === 'trust') { audio.voice('v_trust', true); fxRed = 1; }
+  else { audio.voice('v_dawn', true); $('#flash').style.opacity = 0.85; setTimeout(() => { $('#flash').style.opacity = 0; }, 900); }
+  audio.music('music_dawn', 2);
+  controls.autoRotate = true;
+  setTimeout(() => {
+    drawFrontPage(reason);
+    const g = game;
+    $('#endH span').textContent = reason === 'trust' ? 'Edition pulled' : 'Morning edition';
+    $('#endSub').textContent = reason === 'trust' ? 'Too many corrections. The editor pulled the edition.' : `Filed at 06:00 with ${g.published} ${g.published === 1 ? 'story' : 'stories'} from ${new Set(g.publishedList.map(s => s.d.city)).size} ${g.publishedList.length === 1 ? 'city' : 'cities'}.`;
+    $('#endStats').innerHTML = [
+      ['Readers reached', fmtN(g.readers), true], ['Hours saved', g.hours.toFixed(1)], ['Stories published', `${g.published} of ${g.spawned}`],
+      ['Scoops', `${g.scoops}`], ['Corrections', `${g.corrections}`], ['Capabilities installed', `${g.caps.size + (g.seats ? 1 : 0)}`],
+    ].map(([a, b, big]) => `<dt>${a}</dt><dd${big ? ' class="big"' : ''}>${b}</dd>`).join('');
+    $('#endAbout').textContent = `Without Symbolic, ${g.published || 'these'} ${g.published === 1 ? 'story' : 'stories'} would take a desk about ${Math.round(g.published * 9.5)} hours. Symbolic researches, writes in your house style, checks every claim against your sources and packages the story, so teams cut production time in half.`;
+    showScreen('end'); $('#end').classList.add('show');
+    setTimeout(() => $('#againBtn').focus({ preventScroll: true }), 2200);
+  }, 1100);
+}
+
+/* ---------- morning edition ---------- */
+function halftoneImage(g, img, x, y, w, h, step = 7) {
+  const o = document.createElement('canvas'); o.width = w; o.height = h; const q = o.getContext('2d');
+  const s = Math.max(w / img.width, h / img.height), iw = img.width * s, ih = img.height * s;
+  q.filter = 'grayscale(1) brightness(1.35) contrast(1.35)'; q.drawImage(img, (w - iw) / 2, (h - ih) / 2, iw, ih);
+  const data = q.getImageData(0, 0, w, h).data;
+  g.fillStyle = '#F4F0E2'; g.fillRect(x, y, w, h); g.fillStyle = '#17171b';
+  for (let yy = 0; yy < h; yy += step) for (let xx = ((yy / step) % 2) * step / 2; xx < w; xx += step) {
+    const lum = data[((yy | 0) * w + (xx | 0)) * 4] / 255, rad = (1 - lum) * step * 0.64;
+    if (rad > 0.35) { g.beginPath(); g.arc(x + xx, y + yy, rad, 0, 6.2832); g.fill(); }
+  }
+}
+function worldMap(g, x, y, w, h, list) {
+  g.fillStyle = '#EDE7D5'; g.fillRect(x, y, w, h);
+  g.fillStyle = '#17171b'; const step = 6;
+  for (let yy = 0; yy < h; yy += step) for (let xx = 0; xx < w; xx += step) {
+    const lat = 90 - (yy + step / 2) / h * 180, lon = (xx + step / 2) / w * 360 - 180;
+    if (landMask && isLand(lat, lon)) { g.beginPath(); g.arc(x + xx + step / 2, y + yy + step / 2, 2.1, 0, 6.2832); g.fill(); }
+  }
+  list.forEach((s, i) => {
+    const px = x + (s.d.lon + 180) / 360 * w, py = y + (90 - s.d.lat) / 180 * h;
+    g.fillStyle = C.red; g.beginPath(); g.arc(px, py, 11, 0, 6.2832); g.fill();
+    g.fillStyle = '#fff'; g.font = '400 11px Michroma'; g.textAlign = 'center'; g.fillText(String(i + 1), px, py + 4); g.textAlign = 'left';
+  });
+}
+function wrap(g, text, x, y, maxW, lh) {
+  let line = '';
+  for (const w of text.split(' ')) { const t = line ? line + ' ' + w : w; if (g.measureText(t).width > maxW && line) { g.fillText(line, x, y); y += lh; line = w; } else line = t; }
+  if (line) { g.fillText(line, x, y); y += lh; }
+  return y;
+}
+function drawFrontPage(reason) {
+  const cv = $('#paper'), g = cv.getContext('2d'), W = 1400, H = 1900, M = 80, ink = '#17171b';
+  const list = game.publishedList.slice().sort((a, b) => b.result.readers - a.result.readers);
+  const lead = list[0];
+  const date = new Date(Date.now() + 86400000).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  g.fillStyle = '#F4F0E2'; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 14000; i++) { g.fillStyle = `rgba(60,40,10,${Math.random() * 0.04})`; g.fillRect(Math.random() * W, Math.random() * H, 2, 2); }
+  g.fillStyle = ink; g.font = '400 19px Michroma'; g.fillText('Morning edition', M, 92); g.textAlign = 'right'; g.fillText(date, W - M - 64, 92);
+  g.textAlign = 'center'; g.font = '700 128px Newsreader'; g.fillText('The Meridian', W / 2, 228); g.textAlign = 'left';
+  g.fillRect(M, 256, W - 2 * M, 5); g.fillRect(M, 268, W - 2 * M, 1.5);
+  g.font = 'italic 400 25px Newsreader'; g.fillText('Reported overnight from the world desk', M, 304);
+  g.textAlign = 'right'; g.fillText('Researched, written and checked with Symbolic', W - M, 304); g.textAlign = 'left';
+  g.fillRect(M, 324, W - 2 * M, 1.5);
+  let y = 430;
+  if (reason === 'trust') {
+    g.font = '700 92px Newsreader'; y = wrap(g, 'This edition was pulled after too many corrections', M, y, W - 2 * M, 96);
+  } else if (!lead) {
+    g.font = '700 92px Newsreader'; y = wrap(g, 'A quiet night: the desk filed no stories', M, y, W - 2 * M, 96);
+  } else {
+    g.font = '700 94px Newsreader'; y = wrap(g, lead.d.head, M, y, W - 2 * M, 98);
+    g.font = 'italic 400 40px Newsreader'; y = wrap(g, `${lead.order[lead.choice] === 0 ? lead.d.ok : lead.d.no} Filed at ${lead.result.at}${lead.result.scoop ? ', ahead of The Daily Rumor' : ''}.`, M, y + 6, W - 2 * M - 80, 50);
+  }
+  y += 28;
+  const imgW = 800, imgH = 450;
+  const img = frontImg;
+  if (img && img.complete && img.naturalWidth) halftoneImage(g, img, M, y, imgW, imgH);
+  else worldMap(g, M, y, imgW, imgH, list.slice(0, 9));
+  g.fillStyle = '#44423c'; g.font = 'italic 400 22px Newsreader'; g.fillText('The world desk at dawn, as the morning edition goes to press.', M, y + imgH + 32);
+  const sx = M + imgW + 44, sw = W - M - sx; g.fillStyle = ink; g.fillRect(sx, y, sw, 4);
+  g.font = '700 34px Newsreader'; g.fillText('How the desk did', sx, y + 50);
+  const rows = [['Readers', fmtN(game.readers)], ['Stories', `${game.published} of ${game.spawned}`], ['Scoops', `${game.scoops}`], ['Hours saved', game.hours.toFixed(1)], ['Corrections', `${game.corrections}`]];
+  let ry = y + 102;
+  for (const [a, b] of rows) { g.font = 'italic 400 26px Newsreader'; g.fillStyle = '#44423c'; g.fillText(a, sx, ry); g.font = '400 20px Michroma'; g.fillStyle = ink; g.textAlign = 'right'; g.fillText(b, W - M, ry); g.textAlign = 'left'; g.fillRect(sx, ry + 16, sw, 1); ry += 58; }
+  const mapY = ry + 20, mapH = Math.round(sw / 2);
+  worldMap(g, sx, mapY, sw, mapH, list.slice(0, 9));
+  g.fillStyle = '#44423c'; g.font = 'italic 400 19px Newsreader'; g.fillText('Where the desk reported from', sx, mapY + mapH + 26);
+  let by = Math.max(y + imgH + 104, mapY + mapH + 96); const colW = (W - 2 * M - 48) / 2;
+  const rest = list.slice(1, 7);
+  rest.forEach((s, i) => {
+    const cx = M + (i % 2) * (colW + 48), cy = by + Math.floor(i / 2) * 200;
+    if (cy + 170 > H - 60) return;
+    g.fillStyle = ink; g.fillRect(cx, cy - 36, colW, 1.5);
+    g.font = '400 16px Michroma'; g.fillStyle = '#6c6a62'; g.fillText(`${s.d.city}, ${s.d.beat}`.toUpperCase(), cx, cy - 8);
+    g.fillStyle = ink; g.font = '700 38px Newsreader'; const ny = wrap(g, s.d.head, cx, cy + 34, colW, 42);
+    g.font = '400 24px Newsreader'; g.fillStyle = '#2b2a26'; wrap(g, `${s.order[s.choice] === 0 ? s.d.ok : s.d.no}${s.correction ? ' (Corrected.)' : ''}`, cx, ny + 4, colW, 32);
+  });
+  if (!rest.length) {
+    g.font = 'italic 400 28px Newsreader'; g.fillStyle = '#44423c';
+    wrap(g, `${game.spawned} stories broke overnight. ${game.cold} went cold before an agent reached them.`, M, by, W - 2 * M - 400, 38);
+  }
+  g.save(); g.translate(W - 360, H - 140); g.rotate(-0.09); g.strokeStyle = C.red; g.fillStyle = C.red; g.lineWidth = 6; g.globalAlpha = 0.85;
+  g.beginPath(); g.roundRect(-10, -66, 310, 110, 22); g.stroke();
+  g.font = '400 30px Michroma'; g.fillText(reason === 'trust' ? 'Pulled' : 'Filed 06:00', 14, -14); g.font = '400 17px Michroma'; g.fillText('with Symbolic', 16, 22);
+  g.restore();
+  if (logoImg && logoImg.complete) { g.globalAlpha = 1; g.drawImage(logoImg, W - M - 44, 70, 44, 44); }
+}
+const frontImg = ASSETS.frontpage ? Object.assign(new Image(), { src: ASSETS.frontpage }) : null;
+const logoImg = ASSETS.logo ? Object.assign(new Image(), { src: ASSETS.logo }) : null;
+
+/* =========================================================
+   Input
+   ========================================================= */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let down = null, lastInput = 0;
+canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; lastInput = realT; focus = null; audio.start(); if (state === 'title') audio.music('music_title'); });
+canvas.addEventListener('pointerup', e => {
+  if (!down) return; const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y); down = null;
+  if (moved > 6 || state !== 'playing' || paused || modalOpen) return;
+  const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hits = ray.intersectObjects([ocean, ...hitMeshes], false);
+  const h = hits.find(x => x.object !== ocean) ; const o = hits.find(x => x.object === ocean);
+  if (h && (!o || h.distance < o.distance + 0.3)) clickStory(h.object.userData.story);
+});
+controls.addEventListener('start', () => { lastInput = realT; focus = null; });
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (state === 'title' && k === 'enter' && !$('#startBtn').disabled && document.activeElement?.tagName !== 'BUTTON') { startShift(); return; }
+  if (k === 'm') { toggleSound(); return; }
+  if (state !== 'playing') return;
+  if (modalOpen) { const i = parseInt(k, 10); if (i >= 1 && i <= modalChoices.length) chooseCap(modalChoices[i - 1]); return; }
+  if (k === 'p' || k === 'escape') { setPaused(!paused); return; }
+  if (paused) return;
+  const n = parseInt(k, 10);
+  if (n >= 1 && n <= 9) { const list = stories.filter(s => !s.removed); if (list[n - 1]) { audio.click(); select(list[n - 1], true); } return; }
+  if (k === 'enter' && selected && selected.state === 'new' && document.activeElement?.tagName !== 'BUTTON') { e.preventDefault(); assign(selected); return; }
+  if ((k === 'a' || k === 'b') && selected && selected.state === 'call') decide(selected, k === 'a' ? 0 : 1);
+});
+addEventListener('blur', () => { if (state === 'playing' && !modalOpen) setPaused(true); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'playing' && !modalOpen) setPaused(true); });
+function toggleSound() { audio.start(); audio.setMuted(!audio.muted); const b = $('#soundBtn'); b.textContent = audio.muted ? 'Sound off' : 'Sound on'; b.setAttribute('aria-pressed', String(!audio.muted)); if (state === 'title') audio.music('music_title'); }
+$('#soundBtn').addEventListener('click', toggleSound);
+$('#startBtn').addEventListener('click', startShift);
+$('#resumeBtn').addEventListener('click', () => setPaused(false));
+$('#restartBtn').addEventListener('click', () => { state = 'title'; startShift(); });
+$('#againBtn').addEventListener('click', () => { state = 'title'; startShift(); });
+document.addEventListener('pointerdown', () => { if (state === 'title' && audio.ready) audio.music('music_title'); }, { once: false });
+
+/* =========================================================
+   Main loop
+   ========================================================= */
+const clock = new THREE.Clock();
+let hudT = 0;
+function frame() {
+  let dt = Math.min(clock.getDelta(), TURBO ? 0.2 : 0.05);
+  realT += dt; uTime.value = realT;
+  const running = state === 'playing' && !paused && !modalOpen;
+  const gdt = running ? dt : 0;
+  if (running) {
+    gt += gdt;
+    game.nextSpawn -= gdt;
+    if (game.nextSpawn <= 0 && gt < SHIFT - 20) { spawnStory(); const k = gt / SHIFT; game.nextSpawn = (12.5 - 6 * k) * rand(0.8, 1.2); }
+    updateStories(gdt);
+    if (game.hours >= (UPGRADE_AT[game.upIdx] ?? Infinity)) openUpgrade();
+    if (gt >= SHIFT) endShift('dawn');
+  }
+  updateAgents(dt, running);
+  updateParticles(dt); updateEffects(dt); updateBeacons();
+
+  // The sun travels across the night so dawn arrives on the side you face.
+  const night = state === 'playing' || state === 'end' ? clamp(gt / SHIFT, 0, 1) : 0.15;
+  const a = OG ? 2.55 : 0.35 + night * 2.7;
+  sunDir.set(Math.sin(a) * 0.95, 0.22, -Math.cos(a)).normalize();
+  fxDawn = damp(fxDawn, state === 'end' ? 0.6 : clamp((gt - SHIFT + 40) / 40, 0, 1) * 0.4 * (state === 'playing' ? 1 : 0), 1.2, dt);
+
+  hub.userData.t1.rotation.z += dt * 0.4; hub.userData.t2.rotation.z -= dt * 0.9;
+  dial.rotation.y += dt * 0.02; meridian.rotation.y += dt * 0.05;
+  for (const s of sats) { s.userData.a += dt * 0.25; s.position.set(Math.cos(s.userData.a) * R * 1.58, Math.sin(s.userData.a) * R * 1.58, 0); }
+
+  if (focus) {
+    focus.t = Math.min(1, focus.t + dt / 0.9); const e = 1 - Math.pow(1 - focus.t, 3);
+    const d = focus.from.clone().lerp(focus.to, e).normalize().multiplyScalar(focus.dist);
+    camera.position.copy(controls.target).add(d);
+    if (focus.t >= 1) focus = null;
+  }
+  controls.autoRotate = !focus && (state !== 'playing' || realT - lastInput > 14);
+  controls.update();
+
+  hudT += dt;
+  if (state === 'playing') {
+    updateLabels();
+    if (hudT > 0.1) {
+      hudT = 0;
+      $('#clock').textContent = clockText(gt);
+      $('#shiftBar').style.width = `${clamp(gt / SHIFT, 0, 1) * 100}%`;
+      const hl = Math.max(0, Math.ceil((SHIFT - gt) / HOUR));
+      $('#shiftTxt').textContent = hl > 1 ? `${hl} hours to the morning edition` : hl === 1 ? 'Under an hour to the morning edition' : 'The morning edition goes to press';
+      $('#readers').textContent = fmtN(game.readers);
+      $('#hoursSaved').textContent = game.hours.toFixed(1);
+      $('#scoops').textContent = game.scoops;
+      updateCard(); updateQueue();
+      if (renderCardDirty()) renderCard();
+    }
+    if (coachTimer > 0) { coachTimer -= dt; if (coachTimer <= 0) $('#coach').classList.remove('on'); }
+  } else updateLabels();
+  updateTicker(dt);
+
+  fxRed = damp(fxRed, 0, 2, dt);
+  finalPass.uniforms.uTime.value = realT; finalPass.uniforms.uRed.value = fxRed; finalPass.uniforms.uDawn.value = fxDawn;
+  const scale = (innerHeight * PR) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+  dotUniforms.uScale.value = scale; pMat.uniforms.uScale.value = scale;
+  composer.render();
+  requestAnimationFrame(frame);
+}
+function renderCardDirty() {
+  const s = selected && !selected.removed ? selected : null;
+  const key = s ? `${s.id}:${s.state}:${s.stage}:${game.caps.has('factcheck')}:${freeAgent() ? 1 : 0}` : 'none';
+  return key !== cardKey;
+}
+addEventListener('resize', () => {
+  renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); bloom.setSize(innerWidth, innerHeight);
+  applyViewOffset(); finalPass.uniforms.uRes.value.set(innerWidth * PR, innerHeight * PR);
+  controls.maxDistance = Math.max(32, fitDistance() + 6);
+  const off = camera.position.clone().sub(controls.target); if (off.length() < fitDistance() * 0.8) camera.position.copy(controls.target).add(off.setLength(fitDistance()));
+});
+
+/* =========================================================
+   Boot
+   ========================================================= */
+async function boot() {
+  if (ASSETS.title_art) $('#splash').style.backgroundImage = `url(${ASSETS.title_art})`;
+  const fonts = ['400 20px Michroma', '400 40px Newsreader', '600 40px Newsreader', '700 40px Newsreader', 'italic 400 40px Newsreader'];
+  await Promise.all([
+    Promise.race([Promise.all(fonts.map(f => document.fonts.load(f))), new Promise(r => setTimeout(r, 3000))]),
+    loadLand(),
+  ]);
+  buildDots();
+  resetGame(); renderBay();
+  frame();
+  setTimeout(() => $('#splash').classList.add('gone'), 300);
+  const b = $('#startBtn'); b.disabled = false; b.textContent = 'Start the night shift'; b.focus();
+  $('#loadNote').textContent = Object.keys(ASSETS).length ? '' : 'Generated audio and art are missing. The game runs with synth sound.';
+}
+window.__desk = { state: () => ({ state, gt, stories: stories.length, readers: game.readers, hours: game.hours, caps: [...game.caps], agents: agents.length, trust: game.trust }), skip: s => { gt += s; }, end: () => endShift('dawn'), select: i => { const l = stories.filter(s => !s.removed); if (l[i]) select(l[i], true); }, assignAll: () => { for (const s of stories) if (s.state === 'new') assign(s); }, callRight: () => { for (const s of stories) if (s.state === 'call') decide(s, s.correctIdx); } };
+boot();
+</script>
+</body>
+</html>
