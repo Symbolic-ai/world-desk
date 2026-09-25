@@ -15,6 +15,19 @@ document analysis, house style, fact check, AI routing, institutional memory,
 publishing packages and more agents. At dawn, the morning edition prints your
 best stories.
 
+## Difficulty
+
+Pick Easy, Normal or Hard on the title screen. You can switch at any time from
+the control under the clock or from the pause menu. Hard is the original pace.
+
+| | Easy | Normal | Hard |
+| --- | --- | --- | --- |
+| Time between stories | 1.6× | 1.25× | 1× |
+| Time before the rival publishes | 1.6× | 1.3× | 1× |
+| Agent speed | 1.35× | 1.15× | 1× |
+| Time for a fact-check call | 75 s | 55 s | 40 s |
+| Sources labelled by Symbolic | Always | With Fact check | With Fact check |
+
 ## Controls
 
 - Drag to turn the globe. Click a story to select it.
